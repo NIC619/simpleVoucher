@@ -1,66 +1,41 @@
-## Foundry
+# SimpleVoucher
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A simple on-chain voucher system. Issue vouchers under topics, share them with recipients, and let them redeem on-chain.
 
-Foundry consists of:
+## How It Works
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+1. **Issue**: Create vouchers under a topic (e.g., "event-2024"). Only hashes are stored on-chain.
+2. **Share**: Send raw voucher values to recipients via redeem links.
+3. **Redeem**: Recipients submit the raw voucher to claim it. The contract verifies by hashing.
 
-## Documentation
+## Redeem URLs
 
-https://book.getfoundry.sh/
+- `/{issuer}/{topic}` - Recipient enters voucher manually
+- `/{issuer}/{topic}/{voucher}` - One-click redeem with voucher pre-filled
 
-## Usage
+## Development
 
-### Build
+### Contract
 
-```shell
-$ forge build
+```bash
+forge install
+forge build
+forge test
+
+# Deploy
+cp .env.example .env  # Configure PRIVATE_KEY, RPC_URL
+forge script script/DeploySimpleVoucher.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
-### Test
+### Frontend
 
-```shell
-$ forge test
+```bash
+cd frontend
+npm install
+cp .env.example .env.local  # Configure NEXT_PUBLIC_CONTRACT_ADDRESS
+npm run dev
 ```
 
-### Format
+## License
 
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+MIT
