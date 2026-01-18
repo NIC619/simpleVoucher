@@ -4,7 +4,7 @@ import { useState } from "react";
 import { keccak256, toHex } from "viem";
 
 interface VoucherGeneratorProps {
-  onUseVouchers: (voucherHashes: string[]) => void;
+  onUseVouchers: (rawVouchers: string[]) => void;
 }
 
 export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
@@ -42,8 +42,8 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const useHashes = () => {
-    onUseVouchers(generatedHashes);
+  const useVouchers = () => {
+    onUseVouchers(generatedVouchers);
   };
 
   return (
@@ -94,22 +94,14 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-300">
-                Voucher Hashes (submit these to the contract):
+                Voucher Hashes (auto-computed, stored on-chain):
               </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => copyToClipboard(generatedHashes, "hashes")}
-                  className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
-                >
-                  {copied === "hashes" ? "Copied!" : "Copy All"}
-                </button>
-                <button
-                  onClick={useHashes}
-                  className="text-sm px-3 py-1 bg-green-600 hover:bg-green-700 rounded transition-colors"
-                >
-                  Use These Hashes
-                </button>
-              </div>
+              <button
+                onClick={() => copyToClipboard(generatedHashes, "hashes")}
+                className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+              >
+                {copied === "hashes" ? "Copied!" : "Copy All"}
+              </button>
             </div>
             <div className="max-h-32 overflow-y-auto bg-gray-900 p-2 rounded text-xs font-mono">
               {generatedHashes.map((h, i) => (
@@ -119,6 +111,13 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
               ))}
             </div>
           </div>
+
+          <button
+            onClick={useVouchers}
+            className="w-full py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors"
+          >
+            Use These Vouchers
+          </button>
 
           <p className="text-xs text-yellow-500">
             Important: Save the raw vouchers securely! You&apos;ll need to distribute them

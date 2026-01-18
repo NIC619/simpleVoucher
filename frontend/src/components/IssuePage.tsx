@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { keccak256 } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
 import { VoucherGenerator } from "./VoucherGenerator";
 
@@ -11,8 +12,9 @@ export function IssuePage() {
   const [voucherType, setVoucherType] = useState<VoucherType>("basic");
   const [topic, setTopic] = useState("");
   const [submittedTopic, setSubmittedTopic] = useState("");
-  const [voucherHashesInput, setVoucherHashesInput] = useState("");
+  const [vouchersInput, setVouchersInput] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
+  const [copiedPreviewUrl, setCopiedPreviewUrl] = useState<string | null>(null);
   const { address, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -31,13 +33,27 @@ export function IssuePage() {
     }
   };
 
-  const parseVoucherHashes = (input: string): `0x${string}`[] => {
+  const copyPreviewUrl = async (url: string, id: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedPreviewUrl(id);
+    setTimeout(() => setCopiedPreviewUrl(null), 2000);
+  };
+
+  // Parse raw vouchers from input
+  const parseVouchers = (input: string): `0x${string}`[] => {
     return input
       .split(/[\n,]/)
-      .map((h) => h.trim())
-      .filter((h) => h.length > 0)
-      .map((h) => (h.startsWith("0x") ? h : `0x${h}`) as `0x${string}`);
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .map((v) => (v.startsWith("0x") ? v : `0x${v}`) as `0x${string}`);
   };
+
+  // Compute hashes from vouchers
+  const { vouchers, voucherHashes } = useMemo(() => {
+    const vouchers = parseVouchers(vouchersInput);
+    const voucherHashes = vouchers.map((v) => keccak256(v));
+    return { vouchers, voucherHashes };
+  }, [vouchersInput]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +63,8 @@ export function IssuePage() {
       return;
     }
 
-    const hashes = parseVoucherHashes(voucherHashesInput);
-    if (hashes.length === 0) {
-      alert("Please enter at least one voucher hash");
+    if (voucherHashes.length === 0) {
+      alert("Please enter at least one voucher");
       return;
     }
 
@@ -60,12 +75,12 @@ export function IssuePage() {
       address: SIMPLE_VOUCHER_ADDRESS,
       abi: SIMPLE_VOUCHER_ABI,
       functionName: "issueBasicVouchers",
-      args: [topic, hashes],
+      args: [topic, voucherHashes],
     });
   };
 
-  const handleUseVouchers = (hashes: string[]) => {
-    setVoucherHashesInput(hashes.join("\n"));
+  const handleUseVouchers = (rawVouchers: string[]) => {
+    setVouchersInput(rawVouchers.join("\n"));
   };
 
   return (
@@ -114,33 +129,107 @@ export function IssuePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Voucher Hashes (one per line or comma-separated)
+            Vouchers (one per line or comma-separated)
           </label>
           <textarea
-            value={voucherHashesInput}
-            onChange={(e) => setVoucherHashesInput(e.target.value)}
+            value={vouchersInput}
+            onChange={(e) => setVouchersInput(e.target.value)}
             placeholder="0x1234...abcd&#10;0x5678...efgh"
-            rows={6}
+            rows={4}
             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
             required
           />
           <p className="mt-1 text-sm text-gray-400">
-            {parseVoucherHashes(voucherHashesInput).length} voucher(s) to issue
+            {vouchers.length} voucher(s) - these are the raw values to share with redeemers
           </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Voucher Hashes (auto-computed, stored on-chain)
+          </label>
+          <textarea
+            value={voucherHashes.join("\n")}
+            readOnly
+            rows={4}
+            className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-gray-400 font-mono text-sm cursor-not-allowed"
+            placeholder="Hashes will appear here..."
+          />
         </div>
 
         {/* Redeem URL Preview */}
         {isConnected && topic && (
-          <div className="p-4 bg-gray-800 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-300 mb-2">
+          <div className="p-4 bg-gray-800 rounded-lg space-y-4">
+            <h3 className="text-sm font-medium text-gray-300">
               Redeem Link Preview
             </h3>
-            <p className="text-sm text-gray-400 mb-2">
-              After issuing, share this link with voucher holders:
-            </p>
-            <code className="block p-2 bg-gray-900 rounded text-xs text-blue-400 break-all">
-              {typeof window !== "undefined" ? window.location.origin : ""}/{address}/{encodeURIComponent(topic)}
-            </code>
+
+            <div>
+              <p className="text-sm text-gray-400 mb-2">
+                Share this link (redeemer enters voucher):
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 p-2 bg-gray-900 rounded text-xs text-blue-400 break-all">
+                  {typeof window !== "undefined" ? window.location.origin : ""}/{address}/{encodeURIComponent(topic)}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copyPreviewUrl(
+                    `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}`,
+                    "base"
+                  )}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs font-medium transition-colors whitespace-nowrap"
+                >
+                  {copiedPreviewUrl === "base" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            {vouchers.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-400">
+                    Or share with voucher included (one-click redeem):
+                  </p>
+                  {vouchers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allUrls = vouchers.map(v =>
+                          `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}/${v}`
+                        ).join("\n");
+                        copyPreviewUrl(allUrls, "all");
+                      }}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-medium transition-colors"
+                    >
+                      {copiedPreviewUrl === "all" ? "Copied!" : "Copy All"}
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {vouchers.map((v, i) => {
+                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}/${v}`;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <code className="flex-1 p-2 bg-gray-900 rounded text-xs text-green-400 break-all">
+                          {fullUrl}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => copyPreviewUrl(fullUrl, `voucher-${i}`)}
+                          className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-medium transition-colors whitespace-nowrap"
+                        >
+                          {copiedPreviewUrl === `voucher-${i}` ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {vouchers.length} redeem link(s) with voucher included
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -149,7 +238,7 @@ export function IssuePage() {
         ) : (
           <button
             type="submit"
-            disabled={isPending || isConfirming || !topic || !voucherHashesInput}
+            disabled={isPending || isConfirming || !topic || vouchers.length === 0}
             className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
             {isPending

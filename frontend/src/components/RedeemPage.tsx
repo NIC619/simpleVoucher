@@ -7,12 +7,13 @@ import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
 interface RedeemPageProps {
   prefillIssuer?: string;
   prefillTopic?: string;
+  prefillVoucher?: string;
 }
 
-export function RedeemPage({ prefillIssuer, prefillTopic }: RedeemPageProps) {
+export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: RedeemPageProps) {
   const [issuer, setIssuer] = useState(prefillIssuer || "");
   const [topic, setTopic] = useState(prefillTopic || "");
-  const [voucher, setVoucher] = useState("");
+  const [voucher, setVoucher] = useState(prefillVoucher || "");
   const { isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -22,7 +23,8 @@ export function RedeemPage({ prefillIssuer, prefillTopic }: RedeemPageProps) {
   useEffect(() => {
     if (prefillIssuer) setIssuer(prefillIssuer);
     if (prefillTopic) setTopic(prefillTopic);
-  }, [prefillIssuer, prefillTopic]);
+    if (prefillVoucher) setVoucher(prefillVoucher);
+  }, [prefillIssuer, prefillTopic, prefillVoucher]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +51,7 @@ export function RedeemPage({ prefillIssuer, prefillTopic }: RedeemPageProps) {
 
   return (
     <div className="space-y-6">
-      {(prefillIssuer || prefillTopic) && (
+      {(prefillIssuer || prefillTopic || prefillVoucher) && (
         <div className="p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg text-blue-300 text-sm">
           Redeeming voucher from issuer{" "}
           <span className="font-mono">{prefillIssuer?.slice(0, 6)}...{prefillIssuer?.slice(-4)}</span>
@@ -57,6 +59,11 @@ export function RedeemPage({ prefillIssuer, prefillTopic }: RedeemPageProps) {
             <>
               {" "}under topic <span className="font-semibold">&quot;{prefillTopic}&quot;</span>
             </>
+          )}
+          {prefillVoucher && (
+            <span className="block mt-1 text-green-300">
+              Voucher pre-filled. Connect wallet and click Redeem.
+            </span>
           )}
         </div>
       )}
@@ -103,6 +110,7 @@ export function RedeemPage({ prefillIssuer, prefillTopic }: RedeemPageProps) {
             placeholder="0x..."
             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
             required
+            readOnly={!!prefillVoucher}
           />
           <p className="mt-1 text-sm text-gray-400">
             Enter the raw voucher value you received from the issuer
