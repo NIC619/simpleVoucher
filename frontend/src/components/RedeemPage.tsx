@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { keccak256 } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
+
+// Status enum from contract: 0 = Nonexist, 1 = Issued, 2 = Redeemed
+type VoucherStatus = 0 | 1 | 2;
 
 interface RedeemPageProps {
   prefillIssuer?: string;
@@ -14,17 +18,62 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
   const [issuer, setIssuer] = useState(prefillIssuer || "");
   const [topic, setTopic] = useState(prefillTopic || "");
   const [voucher, setVoucher] = useState(prefillVoucher || "");
+  const [checkTriggered, setCheckTriggered] = useState(false);
   const { isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
+  // Compute voucher hash for checking status
+  const getVoucherHash = (v: string): `0x${string}` | null => {
+    if (!v) return null;
+    const voucherValue = v.startsWith("0x") ? v : `0x${v}`;
+    try {
+      return keccak256(voucherValue as `0x${string}`);
+    } catch {
+      return null;
+    }
+  };
+
+  const voucherHash = getVoucherHash(voucher);
+
+  // Check voucher status
+  const shouldCheck = checkTriggered && issuer && topic && voucherHash && SIMPLE_VOUCHER_ADDRESS;
+
+  const { data: statusData, isLoading: isChecking, error: checkError, refetch } = useReadContract({
+    address: SIMPLE_VOUCHER_ADDRESS,
+    abi: SIMPLE_VOUCHER_ABI,
+    functionName: "getVoucherStatus",
+    args: shouldCheck ? [issuer as `0x${string}`, topic, voucherHash] : undefined,
+    query: {
+      enabled: !!shouldCheck,
+    },
+  });
+
+  const voucherStatus = statusData as VoucherStatus | undefined;
+
+  // Auto-check when prefilled voucher is provided
   useEffect(() => {
     if (prefillIssuer) setIssuer(prefillIssuer);
     if (prefillTopic) setTopic(prefillTopic);
-    if (prefillVoucher) setVoucher(prefillVoucher);
+    if (prefillVoucher) {
+      setVoucher(prefillVoucher);
+      setCheckTriggered(true);
+    }
   }, [prefillIssuer, prefillTopic, prefillVoucher]);
+
+  // Reset check when inputs change (for manual input)
+  useEffect(() => {
+    if (!prefillVoucher) {
+      setCheckTriggered(false);
+    }
+  }, [issuer, topic, voucher, prefillVoucher]);
+
+  const handleCheckVoucher = () => {
+    setCheckTriggered(true);
+    refetch();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +96,27 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
   const handleReset = () => {
     reset();
     setVoucher("");
+    setCheckTriggered(false);
   };
+
+  const getStatusMessage = () => {
+    if (isChecking) return { type: "loading", message: "Checking voucher status..." };
+    if (checkError) return { type: "error", message: "Failed to check voucher status" };
+    if (voucherStatus === undefined) return null;
+
+    switch (voucherStatus) {
+      case 0:
+        return { type: "error", message: "Voucher does not exist or invalid issuer/topic" };
+      case 1:
+        return { type: "success", message: "Voucher is valid and can be redeemed" };
+      case 2:
+        return { type: "warning", message: "Voucher has already been redeemed" };
+      default:
+        return null;
+    }
+  };
+
+  const statusMessage = checkTriggered ? getStatusMessage() : null;
 
   return (
     <div className="space-y-6">
@@ -60,11 +129,21 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
               {" "}under topic <span className="font-semibold">&quot;{prefillTopic}&quot;</span>
             </>
           )}
-          {prefillVoucher && (
-            <span className="block mt-1 text-green-300">
-              Voucher pre-filled. Connect wallet and click Redeem.
-            </span>
-          )}
+        </div>
+      )}
+
+      {/* Voucher Status Message */}
+      {statusMessage && (
+        <div className={`p-3 rounded-lg text-sm ${
+          statusMessage.type === "success"
+            ? "bg-green-900/50 border border-green-500 text-green-300"
+            : statusMessage.type === "warning"
+            ? "bg-yellow-900/50 border border-yellow-500 text-yellow-300"
+            : statusMessage.type === "error"
+            ? "bg-red-900/50 border border-red-500 text-red-300"
+            : "bg-gray-800 text-gray-300"
+        }`}>
+          {statusMessage.message}
         </div>
       )}
 
@@ -117,12 +196,24 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
           </p>
         </div>
 
+        {/* Check Voucher Button (for manual input) */}
+        {!prefillVoucher && issuer && topic && voucher && (
+          <button
+            type="button"
+            onClick={handleCheckVoucher}
+            disabled={isChecking}
+            className="w-full py-2 px-4 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 rounded-lg font-medium transition-colors text-sm"
+          >
+            {isChecking ? "Checking..." : "Check Voucher Validity"}
+          </button>
+        )}
+
         {!isConnected ? (
           <p className="text-yellow-500">Please connect your wallet to redeem</p>
         ) : (
           <button
             type="submit"
-            disabled={isPending || isConfirming || !issuer || !topic || !voucher}
+            disabled={isPending || isConfirming || !issuer || !topic || !voucher || voucherStatus === 0 || voucherStatus === 2}
             className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
             {isPending
