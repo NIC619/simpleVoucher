@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ConnectButton } from "@/components/ConnectButton";
+import { ConfigWarnings } from "@/components/ConfigWarnings";
 import { NetworkGuard } from "@/components/NetworkGuard";
 import { IssuePage } from "@/components/IssuePage";
 import { PostMessagePage } from "@/components/PostMessagePage";
@@ -24,6 +25,9 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Config Warnings */}
+        <ConfigWarnings />
+
         {/* Tabs */}
         <div className="flex border-b border-gray-700 mb-8">
           <button
