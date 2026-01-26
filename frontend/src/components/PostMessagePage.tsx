@@ -33,7 +33,10 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
   const hasPimlicoKey = !!process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
 
   // Parse voucher URL to extract issuer, topic, and voucher
-  // Expected format: https://example.com/{issuer}/{topic}/{voucher} or /{issuer}/{topic}/{voucher}
+  // Supported formats:
+  //   /redeem/{issuer}/{topic}/{voucher}
+  //   /post/{issuer}/{topic}/{voucher}
+  //   /{issuer}/{topic}/{voucher} (legacy)
   const parseVoucherUrl = (url: string): { issuer: string; topic: string; voucher: string } | null => {
     try {
       let pathname: string;
@@ -47,7 +50,13 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
       }
 
       // Remove leading slash and split
-      const parts = pathname.slice(1).split("/").filter(Boolean);
+      let parts = pathname.slice(1).split("/").filter(Boolean);
+
+      // Skip "redeem" or "post" prefix if present
+      if (parts.length > 0 && (parts[0] === "redeem" || parts[0] === "post")) {
+        parts = parts.slice(1);
+      }
+
       if (parts.length < 3) return null;
 
       const [issuerPart, topicPart, voucherPart] = parts;

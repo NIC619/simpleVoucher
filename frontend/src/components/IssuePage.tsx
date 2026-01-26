@@ -4,25 +4,33 @@ import { useState, useMemo } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { keccak256 } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
+import { targetChain } from "@/config/wagmi";
 import { VoucherGenerator } from "./VoucherGenerator";
 
 type VoucherType = "basic" | "binding";
+type UseCase = "redeem" | "post";
 
 export function IssuePage() {
   const [voucherType, setVoucherType] = useState<VoucherType>("basic");
+  const [useCase, setUseCase] = useState<UseCase>("redeem");
   const [topic, setTopic] = useState("");
   const [submittedTopic, setSubmittedTopic] = useState("");
   const [vouchersInput, setVouchersInput] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [copiedPreviewUrl, setCopiedPreviewUrl] = useState<string | null>(null);
   const { address, isConnected } = useAccount();
+
+  // URL path prefix based on use case
+  const getUrlPrefix = (selectedUseCase: UseCase) => {
+    return selectedUseCase === "post" ? "/post" : "/redeem";
+  };
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
   const redeemUrl = isSuccess && address && submittedTopic
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(submittedTopic)}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(submittedTopic)}`
     : "";
 
   const copyRedeemUrl = async () => {
@@ -111,6 +119,42 @@ export function IssuePage() {
         </button>
       </div>
 
+      {/* Use Case Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Voucher Use Case
+        </label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setUseCase("redeem")}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+              useCase === "redeem"
+                ? "bg-green-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Redeem Only
+          </button>
+          <button
+            type="button"
+            onClick={() => setUseCase("post")}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+              useCase === "post"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Post Message
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-gray-400">
+          {useCase === "redeem"
+            ? "Standard redemption - voucher holder can redeem directly"
+            : "Anonymous posting - voucher holder can post a message to the bulletin board"}
+        </p>
+      </div>
+
       {/* Issue Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -157,50 +201,35 @@ export function IssuePage() {
           />
         </div>
 
-        {/* Redeem URL Preview */}
+        {/* URL Preview */}
         {isConnected && topic && (
           <div className="p-4 bg-gray-800 rounded-lg space-y-4">
             <h3 className="text-sm font-medium text-gray-300">
-              Redeem Link Preview
+              {useCase === "post" ? "Post Message" : "Redeem"} Link Preview
             </h3>
-
-            <div>
-              <p className="text-sm text-gray-400 mb-2">
-                Share this link (redeemer enters voucher):
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 p-2 bg-gray-900 rounded text-xs text-blue-400 break-all">
-                  {typeof window !== "undefined" ? window.location.origin : ""}/{address}/{encodeURIComponent(topic)}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => copyPreviewUrl(
-                    `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}`,
-                    "base"
-                  )}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs font-medium transition-colors whitespace-nowrap"
-                >
-                  {copiedPreviewUrl === "base" ? "Copied!" : "Copy"}
-                </button>
-              </div>
-            </div>
 
             {vouchers.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm text-gray-400">
-                    Or share with voucher included (one-click redeem):
+                    {useCase === "post"
+                      ? "Share these links to allow anonymous posting:"
+                      : "Share with voucher included (one-click redeem):"}
                   </p>
                   {vouchers.length > 1 && (
                     <button
                       type="button"
                       onClick={() => {
                         const allUrls = vouchers.map(v =>
-                          `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}/${v}`
+                          `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(topic)}/${v}`
                         ).join("\n");
                         copyPreviewUrl(allUrls, "all");
                       }}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-medium transition-colors"
+                      className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${
+                        useCase === "post"
+                          ? "bg-purple-600 hover:bg-purple-700"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
                     >
                       {copiedPreviewUrl === "all" ? "Copied!" : "Copy All"}
                     </button>
@@ -208,16 +237,22 @@ export function IssuePage() {
                 </div>
                 <div className="max-h-40 overflow-y-auto space-y-2">
                   {vouchers.map((v, i) => {
-                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${address}/${encodeURIComponent(topic)}/${v}`;
+                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(topic)}/${v}`;
                     return (
                       <div key={i} className="flex items-center gap-2">
-                        <code className="flex-1 p-2 bg-gray-900 rounded text-xs text-green-400 break-all">
+                        <code className={`flex-1 p-2 bg-gray-900 rounded text-xs break-all ${
+                          useCase === "post" ? "text-purple-400" : "text-green-400"
+                        }`}>
                           {fullUrl}
                         </code>
                         <button
                           type="button"
                           onClick={() => copyPreviewUrl(fullUrl, `voucher-${i}`)}
-                          className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-medium transition-colors whitespace-nowrap"
+                          className={`px-3 py-2 rounded text-white text-xs font-medium transition-colors whitespace-nowrap ${
+                            useCase === "post"
+                              ? "bg-purple-600 hover:bg-purple-700"
+                              : "bg-green-600 hover:bg-green-700"
+                          }`}
                         >
                           {copiedPreviewUrl === `voucher-${i}` ? "Copied!" : "Copy"}
                         </button>
@@ -226,9 +261,15 @@ export function IssuePage() {
                   })}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  {vouchers.length} redeem link(s) with voucher included
+                  {vouchers.length} {useCase === "post" ? "post message" : "redeem"} link(s)
                 </p>
               </div>
+            )}
+
+            {vouchers.length === 0 && (
+              <p className="text-sm text-gray-500">
+                Enter vouchers above to see preview links
+              </p>
             )}
           </div>
         )}
@@ -258,14 +299,16 @@ export function IssuePage() {
         {isSuccess && (
           <div className="p-4 bg-green-900/50 border border-green-500 rounded-lg text-green-300 text-sm space-y-3">
             <p className="font-medium">Vouchers issued successfully!</p>
-            <a
-              href={`https://sepolia.etherscan.io/tx/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline block"
-            >
-              View transaction
-            </a>
+            {targetChain.blockExplorers?.default && (
+              <a
+                href={`${targetChain.blockExplorers.default.url}/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline block"
+              >
+                View transaction on {targetChain.blockExplorers.default.name}
+              </a>
+            )}
 
             {redeemUrl && (
               <div className="pt-3 border-t border-green-700">
