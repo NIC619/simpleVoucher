@@ -5,6 +5,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { keccak256, Hex } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS, VOUCHER_BOARD_ADDRESS } from "@/config/contract";
 import { postMessageViaUserOp } from "@/lib/erc4337";
+import { targetChain } from "@/config/wagmi";
 
 // Status enum from contract: 0 = Nonexist, 1 = Issued, 2 = Redeemed
 type VoucherStatus = 0 | 1 | 2;
@@ -16,6 +17,8 @@ interface PostMessagePageProps {
 }
 
 export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }: PostMessagePageProps) {
+  const [voucherUrl, setVoucherUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [issuer, setIssuer] = useState(prefillIssuer || "");
   const [topic, setTopic] = useState(prefillTopic || "");
   const [voucher, setVoucher] = useState(prefillVoucher || "");
@@ -28,6 +31,59 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
   const { isConnected } = useAccount();
 
   const hasPimlicoKey = !!process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
+
+  // Parse voucher URL to extract issuer, topic, and voucher
+  // Expected format: https://example.com/{issuer}/{topic}/{voucher} or /{issuer}/{topic}/{voucher}
+  const parseVoucherUrl = (url: string): { issuer: string; topic: string; voucher: string } | null => {
+    try {
+      let pathname: string;
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        const urlObj = new URL(url);
+        pathname = urlObj.pathname;
+      } else if (url.startsWith("/")) {
+        pathname = url;
+      } else {
+        pathname = "/" + url;
+      }
+
+      // Remove leading slash and split
+      const parts = pathname.slice(1).split("/").filter(Boolean);
+      if (parts.length < 3) return null;
+
+      const [issuerPart, topicPart, voucherPart] = parts;
+
+      // Validate issuer looks like an address
+      if (!issuerPart.startsWith("0x") || issuerPart.length !== 42) return null;
+
+      // Decode URL-encoded parts
+      return {
+        issuer: issuerPart,
+        topic: decodeURIComponent(topicPart),
+        voucher: decodeURIComponent(voucherPart),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleUrlChange = (url: string) => {
+    setVoucherUrl(url);
+    setUrlError(null);
+
+    if (!url.trim()) {
+      return;
+    }
+
+    const parsed = parseVoucherUrl(url);
+    if (parsed) {
+      setIssuer(parsed.issuer);
+      setTopic(parsed.topic);
+      setVoucher(parsed.voucher);
+      setCheckTriggered(true);
+    } else {
+      setUrlError("Invalid voucher URL format. Expected: /{issuer}/{topic}/{voucher}");
+    }
+  };
 
   // Compute voucher hash for checking status
   const getVoucherHash = (v: string): `0x${string}` | null => {
@@ -169,14 +225,14 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
         <div className="p-4 bg-green-900/50 border border-green-500 rounded-lg text-green-300 space-y-3">
           <p className="font-medium">Message posted successfully!</p>
           <p className="text-sm">Your message has been posted anonymously to the bulletin board.</p>
-          {txHash && (
+          {txHash && targetChain.blockExplorers?.default && (
             <a
-              href={`https://sepolia.etherscan.io/tx/${txHash}`}
+              href={`${targetChain.blockExplorers.default.url}/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm underline block"
             >
-              View transaction on Etherscan
+              View transaction on {targetChain.blockExplorers.default.name}
             </a>
           )}
           <button
@@ -205,6 +261,33 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
 
       {postStatus !== "success" && (
         <div className="space-y-4">
+          {/* URL Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Voucher URL (paste to auto-fill)
+            </label>
+            <input
+              type="text"
+              value={voucherUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="https://example.com/0x.../topic/voucher or /0x.../topic/voucher"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+              disabled={isPosting}
+            />
+            {urlError && (
+              <p className="mt-1 text-sm text-red-400">{urlError}</p>
+            )}
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-900 text-gray-400">or fill manually</span>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Issuer Address
