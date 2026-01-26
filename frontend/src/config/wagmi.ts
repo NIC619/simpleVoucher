@@ -1,15 +1,25 @@
 import { http, createConfig, createStorage, cookieStorage } from "wagmi";
-import { mainnet, sepolia, localhost } from "wagmi/chains";
+import { mainnet, sepolia, base, baseSepolia, type Chain } from "wagmi/chains";
+
+// Supported chains
+const chains: Record<string, Chain> = {
+  mainnet,
+  sepolia,
+  base,
+  "base-sepolia": baseSepolia,
+};
+
+// Get target chain from env variable (default: sepolia)
+const chainName = process.env.NEXT_PUBLIC_CHAIN || "sepolia";
+export const targetChain = chains[chainName] || sepolia;
 
 export const config = createConfig({
-  chains: [localhost, sepolia, mainnet],
+  chains: [targetChain],
   ssr: true,
   storage: createStorage({
     storage: cookieStorage,
   }),
   transports: {
-    [localhost.id]: http("http://127.0.0.1:8545"),
-    [sepolia.id]: http(),
-    [mainnet.id]: http(),
+    [targetChain.id]: http(),
   },
 });
