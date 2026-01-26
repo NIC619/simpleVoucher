@@ -1,39 +1,69 @@
 # SimpleVoucher
 
-A simple on-chain voucher system. Issue vouchers under topics, share them with recipients, and let them redeem on-chain.
+A simple on-chain voucher system with anonymous messaging. Issue vouchers under topics, share them with recipients, and let them redeem or post messages anonymously.
+
+## Features
+
+- **Issue Vouchers**: Create vouchers under a topic. Only hashes are stored on-chain.
+- **Redeem Vouchers**: Recipients submit the raw voucher to claim it.
+- **Anonymous Posting**: Voucher holders can post messages to a bulletin board without revealing their identity (via ERC-4337).
 
 ## How It Works
 
-1. **Issue**: Create vouchers under a topic (e.g., "event-2024"). Only hashes are stored on-chain.
-2. **Share**: Send raw voucher values to recipients via redeem links.
-3. **Redeem**: Recipients submit the raw voucher to claim it. The contract verifies by hashing.
+1. **Issue**: Create vouchers under a topic (e.g., "event-2024"). Share redeem or post links with recipients.
+2. **Redeem**: Recipients visit the link and redeem their voucher on-chain.
+3. **Post Message**: Recipients can use their voucher to post an anonymous message. The message is stored as an on-chain event, and the poster's identity remains hidden.
 
-## Redeem URLs
+## Contracts
 
-- `/{issuer}/{topic}` - Recipient enters voucher manually
-- `/{issuer}/{topic}/{voucher}` - One-click redeem with voucher pre-filled
+| Contract | Description |
+|----------|-------------|
+| `SimpleVoucher` | Core voucher system - issue and redeem vouchers |
+| `VoucherBoard` | Anonymous bulletin board - post messages using vouchers via ERC-4337 |
 
-## Development
+## Deploy Contracts
 
-### Contract
+1. Configure environment:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your PRIVATE_KEY and RPC_URL
+   ```
 
-```bash
-forge install
-forge build
-forge test
+2. Deploy SimpleVoucher:
+   ```bash
+   forge script script/DeploySimpleVoucher.s.sol --rpc-url $RPC_URL --broadcast
+   ```
 
-# Deploy
-cp .env.example .env  # Configure PRIVATE_KEY, RPC_URL
-forge script script/DeploySimpleVoucher.s.sol --rpc-url $RPC_URL --broadcast
-```
+3. Deploy VoucherBoard (requires SimpleVoucher address):
+   ```bash
+   # Add SIMPLE_VOUCHER_ADDRESS to .env first
+   forge script script/DeployVoucherBoard.s.sol --rpc-url $RPC_URL --broadcast
+   ```
 
-### Frontend
+## Frontend Setup
 
+See [frontend/README.md](frontend/README.md) for detailed setup instructions.
+
+Quick start:
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local  # Configure NEXT_PUBLIC_CONTRACT_ADDRESS
+cp .env.example .env.local
+# Edit .env.local with contract addresses and chain config
 npm run dev
+```
+
+## Development
+
+```bash
+# Install dependencies
+forge install
+
+# Build contracts
+forge build
+
+# Run tests
+forge test
 ```
 
 ## License
