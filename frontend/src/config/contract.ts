@@ -82,4 +82,47 @@ export const SIMPLE_VOUCHER_ABI = [
 ] as const;
 
 // Update this with your deployed contract address
-export const SIMPLE_VOUCHER_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}` | undefined;
+export const SIMPLE_VOUCHER_ADDRESS = process.env.NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS as `0x${string}` | undefined;
+
+// VoucherBoard ABI (for posting messages)
+export const VOUCHER_BOARD_ABI = [
+  {
+    type: "function",
+    name: "postMessage",
+    inputs: [
+      { name: "issuer", type: "address" },
+      { name: "topic", type: "string" },
+      { name: "voucher", type: "bytes32" },
+      { name: "message", type: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "simpleVoucher",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "entryPoint",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "pure",
+  },
+  {
+    type: "event",
+    name: "MessagePosted",
+    inputs: [
+      { name: "issuer", type: "address", indexed: true },
+      { name: "topic", type: "string", indexed: false },
+      { name: "voucherHash", type: "bytes32", indexed: true },
+      { name: "message", type: "string", indexed: false },
+    ],
+  },
+] as const;
+
+// VoucherBoard contract address
+export const VOUCHER_BOARD_ADDRESS = process.env.NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS as `0x${string}` | undefined;

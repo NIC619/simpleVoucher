@@ -1,6 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@/components/ConnectButton";
+import { NetworkGuard } from "@/components/NetworkGuard";
 import { RedeemPage } from "@/components/RedeemPage";
 import Link from "next/link";
 
@@ -42,7 +43,9 @@ export default function RedeemWithParams({ params }: PageProps) {
 
         <h2 className="text-2xl font-bold mb-6 text-green-400">Redeem Voucher</h2>
 
-        <RedeemPage prefillIssuer={issuer} prefillTopic={decodedTopic} />
+        <NetworkGuard>
+          <RedeemPage prefillIssuer={issuer} prefillTopic={decodedTopic} />
+        </NetworkGuard>
       </div>
     </main>
   );

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { ConnectButton } from "@/components/ConnectButton";
+import { NetworkGuard } from "@/components/NetworkGuard";
 import { IssuePage } from "@/components/IssuePage";
+import { PostMessagePage } from "@/components/PostMessagePage";
 import { RedeemPage } from "@/components/RedeemPage";
 
-type Tab = "issue" | "redeem";
+type Tab = "issue" | "post" | "redeem";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("issue");
@@ -38,6 +40,19 @@ export default function Home() {
             )}
           </button>
           <button
+            onClick={() => setActiveTab("post")}
+            className={`px-6 py-3 font-medium transition-colors relative ${
+              activeTab === "post"
+                ? "text-purple-400"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Post Message
+            {activeTab === "post" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab("redeem")}
             className={`px-6 py-3 font-medium transition-colors relative ${
               activeTab === "redeem"
@@ -53,7 +68,11 @@ export default function Home() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === "issue" ? <IssuePage /> : <RedeemPage />}
+        <NetworkGuard>
+          {activeTab === "issue" && <IssuePage />}
+          {activeTab === "post" && <PostMessagePage />}
+          {activeTab === "redeem" && <RedeemPage />}
+        </NetworkGuard>
       </div>
     </main>
   );
