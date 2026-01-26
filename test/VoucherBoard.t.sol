@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {SimpleVoucher} from "../src/SimpleVoucher.sol";
 import {VoucherBoard} from "../src/VoucherBoard.sol";
-import {VoucherBoardProxy} from "../src/VoucherBoardProxy.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
@@ -41,10 +40,7 @@ contract VoucherBoardTest is AATest {
 
         // Deploy SimpleVoucher
         SimpleVoucher simpleVoucherImpl = new SimpleVoucher();
-        bytes memory simpleVoucherData = abi.encodeWithSelector(
-            SimpleVoucher.initialize.selector,
-            owner
-        );
+        bytes memory simpleVoucherData = abi.encodeCall(SimpleVoucher.initialize, (owner));
         ERC1967Proxy simpleVoucherProxy = new ERC1967Proxy(
             address(simpleVoucherImpl),
             simpleVoucherData
@@ -53,12 +49,11 @@ contract VoucherBoardTest is AATest {
 
         // Deploy VoucherBoard
         VoucherBoard voucherBoardImpl = new VoucherBoard();
-        bytes memory voucherBoardData = abi.encodeWithSelector(
-            VoucherBoard.initialize.selector,
-            owner,
-            address(simpleVoucher)
+        bytes memory voucherBoardData = abi.encodeCall(
+            VoucherBoard.initialize,
+            (owner, address(simpleVoucher))
         );
-        VoucherBoardProxy voucherBoardProxy = new VoucherBoardProxy(
+        ERC1967Proxy voucherBoardProxy = new ERC1967Proxy(
             address(voucherBoardImpl),
             voucherBoardData
         );
