@@ -18,6 +18,8 @@ interface PostMessagePageProps {
 }
 
 export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }: PostMessagePageProps) {
+  // "url mode" = simplified view with read-only fields (entered via URL route or pasted URL)
+  const [urlMode, setUrlMode] = useState(!!prefillIssuer);
   const [voucherUrl, setVoucherUrl] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
   const [issuer, setIssuer] = useState(prefillIssuer || "");
@@ -97,6 +99,7 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
       setTopic(parsed.topic);
       setVoucher(parsed.voucher);
       setCheckTriggered(true);
+      setUrlMode(true);
     } else {
       setUrlError("Invalid voucher URL format. Expected: /{issuer}/{topic}/{voucher}");
     }
@@ -214,14 +217,9 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
   const statusMessage = checkTriggered ? getStatusMessage() : null;
   const canPost = voucherStatus === 1 && message.length > 0 && !isPosting;
 
-  return (
-    <div className="space-y-6">
-      {/* Info Banner */}
-      <div className="p-3 bg-purple-900/30 border border-purple-500/50 rounded-lg text-purple-300 text-sm">
-        <p className="font-medium mb-1">Anonymous Bulletin Board</p>
-        <p>Post messages using your voucher. Your identity remains hidden as you do not send any transaction from your account.</p>
-      </div>
-
+  // Shared status/progress/success/error UI
+  const renderStatusBanners = () => (
+    <>
       {/* Voucher Status Message */}
       {statusMessage && (
         <div className={`p-3 rounded-lg text-sm ${
@@ -275,6 +273,125 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
           <p className="font-medium">{postStatus}</p>
         </div>
       )}
+    </>
+  );
+
+  // Shared message input + post button UI
+  const renderMessageInput = () => (
+    <>
+      {voucherStatus === 1 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Your Message
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Write your anonymous message..."
+            rows={4}
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            disabled={isPosting}
+            required
+          />
+          <p className="mt-1 text-sm text-gray-400">
+            {message.length} characters
+          </p>
+        </div>
+      )}
+
+      {voucherStatus === 1 && message.length > 0 && (
+        hasPimlicoKey ? (
+          <button
+            type="button"
+            onClick={handlePostMessage}
+            disabled={!canPost}
+            className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+          >
+            {isPosting ? postStatus : "Post Message Anonymously"}
+          </button>
+        ) : (
+          <div className="p-4 bg-yellow-900/30 border border-yellow-500/50 rounded-lg text-yellow-300 text-sm space-y-3">
+            <p className="font-medium">Pimlico API Key Required</p>
+            <p>
+              To post messages via ERC-4337, configure <code className="bg-gray-800 px-1 rounded">PIMLICO_API_KEY</code> in your <code className="bg-gray-800 px-1 rounded">.env.local</code> file.
+            </p>
+            <p>
+              Get a free API key at{" "}
+              <a href="https://dashboard.pimlico.io" target="_blank" rel="noopener noreferrer" className="underline">
+                dashboard.pimlico.io
+              </a>
+            </p>
+            <div className="pt-2 border-t border-yellow-500/30">
+              <p className="text-xs text-gray-400 mb-2">VoucherBoard contract:</p>
+              <code className="block p-2 bg-gray-800 rounded text-xs font-mono break-all">
+                {VOUCHER_BOARD_ADDRESS}
+              </code>
+            </div>
+          </div>
+        )
+      )}
+    </>
+  );
+
+  // Simplified view: URL mode (from URL route or pasted URL)
+  if (urlMode) {
+    return (
+      <div className="space-y-6">
+        {renderStatusBanners()}
+
+        {postStatus !== "success" && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Issuer Address
+              </label>
+              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300 font-mono break-all">
+                {issuer}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Topic
+              </label>
+              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300">
+                {topic}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Voucher (raw value)
+              </label>
+              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300 font-mono break-all">
+                {voucher}
+              </div>
+              <p className="mt-1 text-sm text-gray-400">
+                Your voucher will be consumed after posting
+              </p>
+            </div>
+
+            {renderMessageInput()}
+
+            {!isConnected && (
+              <p className="text-yellow-500">Connect your wallet to check voucher status</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full view: manual mode (Post Message tab)
+  return (
+    <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="p-3 bg-purple-900/30 border border-purple-500/50 rounded-lg text-purple-300 text-sm">
+        <p className="font-medium mb-1">Anonymous Bulletin Board</p>
+        <p>Post messages using your voucher. Your identity remains hidden as you do not send any transaction from your account.</p>
+      </div>
+
+      {renderStatusBanners()}
 
       {postStatus !== "success" && (
         <div className="space-y-4">
@@ -365,59 +482,7 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
             </button>
           )}
 
-          {/* Message input - only show when voucher is valid */}
-          {voucherStatus === 1 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Your Message
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write your anonymous message..."
-                rows={4}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                disabled={isPosting}
-                required
-              />
-              <p className="mt-1 text-sm text-gray-400">
-                {message.length} characters
-              </p>
-            </div>
-          )}
-
-          {/* Post Button or API Key Notice */}
-          {voucherStatus === 1 && message.length > 0 && (
-            hasPimlicoKey ? (
-              <button
-                type="button"
-                onClick={handlePostMessage}
-                disabled={!canPost}
-                className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
-              >
-                {isPosting ? postStatus : "Post Message Anonymously"}
-              </button>
-            ) : (
-              <div className="p-4 bg-yellow-900/30 border border-yellow-500/50 rounded-lg text-yellow-300 text-sm space-y-3">
-                <p className="font-medium">Pimlico API Key Required</p>
-                <p>
-                  To post messages via ERC-4337, configure <code className="bg-gray-800 px-1 rounded">PIMLICO_API_KEY</code> in your <code className="bg-gray-800 px-1 rounded">.env.local</code> file.
-                </p>
-                <p>
-                  Get a free API key at{" "}
-                  <a href="https://dashboard.pimlico.io" target="_blank" rel="noopener noreferrer" className="underline">
-                    dashboard.pimlico.io
-                  </a>
-                </p>
-                <div className="pt-2 border-t border-yellow-500/30">
-                  <p className="text-xs text-gray-400 mb-2">VoucherBoard contract:</p>
-                  <code className="block p-2 bg-gray-800 rounded text-xs font-mono break-all">
-                    {VOUCHER_BOARD_ADDRESS}
-                  </code>
-                </div>
-              </div>
-            )
-          )}
+          {renderMessageInput()}
 
           {!isConnected && (
             <p className="text-yellow-500">Connect your wallet to check voucher status</p>
