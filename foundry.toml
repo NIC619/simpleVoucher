@@ -2,6 +2,8 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+build_info = true
+optimizer = true
 
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
