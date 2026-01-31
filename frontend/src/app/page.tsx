@@ -6,9 +6,7 @@ import { ConfigWarnings } from "@/components/ConfigWarnings";
 import { NetworkGuard } from "@/components/NetworkGuard";
 import { IssuePage } from "@/components/IssuePage";
 import { PostMessagePage } from "@/components/PostMessagePage";
-import { RedeemPage } from "@/components/RedeemPage";
-
-type Tab = "issue" | "post" | "redeem";
+type Tab = "issue" | "post";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("issue");
@@ -56,26 +54,12 @@ export default function Home() {
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />
             )}
           </button>
-          <button
-            onClick={() => setActiveTab("redeem")}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === "redeem"
-                ? "text-green-400"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            Redeem Voucher
-            {activeTab === "redeem" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400" />
-            )}
-          </button>
         </div>
 
         {/* Tab Content */}
         <NetworkGuard>
           {activeTab === "issue" && <IssuePage />}
           {activeTab === "post" && <PostMessagePage />}
-          {activeTab === "redeem" && <RedeemPage />}
         </NetworkGuard>
       </div>
 
