@@ -11,31 +11,15 @@ import { encodeFunctionData, Hex, Address } from "viem";
 import { VOUCHER_BOARD_ABI, VOUCHER_BOARD_ADDRESS } from "@/config/contract";
 import { targetChain } from "@/config/wagmi";
 
-// Get API keys from env
-const PIMLICO_API_KEY = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
-
-// Pimlico chain name mapping
-const getPimlicoChainName = (chainId: number): string => {
-  const mapping: Record<number, string> = {
-    1: "mainnet",
-    11155111: "sepolia",
-    8453: "base",
-    84532: "base-sepolia",
-  };
-  return mapping[chainId] || "sepolia";
-};
-
-// RPC and Bundler URLs
+// API route proxies (secrets stay server-side)
 const getRpcUrl = () => {
-  return process.env.NEXT_PUBLIC_RPC_URL || targetChain.rpcUrls.default.http[0];
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/api/rpc`;
 };
 
 const getBundlerUrl = () => {
-  if (!PIMLICO_API_KEY) {
-    throw new Error("NEXT_PUBLIC_PIMLICO_API_KEY not configured");
-  }
-  const chainName = getPimlicoChainName(targetChain.id);
-  return `https://api.pimlico.io/v2/${chainName}/rpc?apikey=${PIMLICO_API_KEY}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/api/bundler`;
 };
 
 // Get nonce from EntryPoint v0.8

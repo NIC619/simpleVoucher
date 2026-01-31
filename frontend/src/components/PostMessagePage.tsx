@@ -30,8 +30,15 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { isConnected } = useAccount();
+  const [hasPimlicoKey, setHasPimlicoKey] = useState(false);
 
-  const hasPimlicoKey = !!process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
+  // Fetch server-side config (no secrets exposed)
+  useEffect(() => {
+    fetch("/api/config")
+      .then((res) => res.json())
+      .then((data) => setHasPimlicoKey(data.hasPimlicoKey))
+      .catch(() => setHasPimlicoKey(false));
+  }, []);
 
   // Parse voucher URL to extract issuer, topic, and voucher
   // Supported formats:
@@ -394,7 +401,7 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
               <div className="p-4 bg-yellow-900/30 border border-yellow-500/50 rounded-lg text-yellow-300 text-sm space-y-3">
                 <p className="font-medium">Pimlico API Key Required</p>
                 <p>
-                  To post messages via ERC-4337, configure <code className="bg-gray-800 px-1 rounded">NEXT_PUBLIC_PIMLICO_API_KEY</code> in your <code className="bg-gray-800 px-1 rounded">.env.local</code> file.
+                  To post messages via ERC-4337, configure <code className="bg-gray-800 px-1 rounded">PIMLICO_API_KEY</code> in your <code className="bg-gray-800 px-1 rounded">.env.local</code> file.
                 </p>
                 <p>
                   Get a free API key at{" "}

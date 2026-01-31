@@ -19,6 +19,9 @@ Web interface for issuing vouchers and posting anonymous messages.
    # Target chain: mainnet, sepolia, base, base-sepolia
    NEXT_PUBLIC_CHAIN=sepolia
 
+   # RPC URL (optional, uses public default if not set)
+   RPC_URL=
+
    # SimpleVoucher contract address (deployed proxy address)
    NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS=0x...
 
@@ -26,7 +29,7 @@ Web interface for issuing vouchers and posting anonymous messages.
    NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS=0x...
 
    # Pimlico API key for ERC-4337 bundler (required for Post Message)
-   NEXT_PUBLIC_PIMLICO_API_KEY=
+   PIMLICO_API_KEY=
    ```
 
 4. Run development server:
@@ -43,7 +46,8 @@ Web interface for issuing vouchers and posting anonymous messages.
 | `NEXT_PUBLIC_CHAIN` | Yes | Target network: `mainnet`, `sepolia`, `base`, `base-sepolia` |
 | `NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS` | Yes | Deployed SimpleVoucher proxy address |
 | `NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS` | For posting | Deployed VoucherBoard proxy address |
-| `NEXT_PUBLIC_PIMLICO_API_KEY` | For posting | Get free key at [dashboard.pimlico.io](https://dashboard.pimlico.io) |
+| `RPC_URL` | No | Private RPC endpoint (server-side only, not exposed to browser) |
+| `PIMLICO_API_KEY` | For posting | Get free key at [dashboard.pimlico.io](https://dashboard.pimlico.io) (server-side only) |
 
 ## URL Routes
 

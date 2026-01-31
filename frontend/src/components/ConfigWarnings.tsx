@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useReadContract } from "wagmi";
 import {
   SIMPLE_VOUCHER_ABI,
@@ -30,6 +31,15 @@ function validateAddress(address: string | undefined, name: string): ConfigWarni
 }
 
 export function ConfigWarnings() {
+  const [hasPimlicoKey, setHasPimlicoKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then((res) => res.json())
+      .then((data) => setHasPimlicoKey(data.hasPimlicoKey))
+      .catch(() => setHasPimlicoKey(false));
+  }, []);
+
   const warnings: ConfigWarning[] = [];
 
   // Check NEXT_PUBLIC_CHAIN
@@ -52,11 +62,10 @@ export function ConfigWarnings() {
   }
 
   // Check PIMLICO_API_KEY (warning only)
-  const pimlicoKey = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
-  if (!pimlicoKey) {
+  if (hasPimlicoKey === false) {
     warnings.push({
       type: "warning",
-      message: "NEXT_PUBLIC_PIMLICO_API_KEY is not configured (required for Post Message)",
+      message: "PIMLICO_API_KEY is not configured (required for Post Message)",
     });
   }
 
