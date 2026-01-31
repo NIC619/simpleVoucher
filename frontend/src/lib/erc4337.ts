@@ -27,7 +27,7 @@ const getPimlicoChainName = (chainId: number): string => {
 
 // RPC and Bundler URLs
 const getRpcUrl = () => {
-  return targetChain.rpcUrls.default.http[0];
+  return process.env.NEXT_PUBLIC_RPC_URL || targetChain.rpcUrls.default.http[0];
 };
 
 const getBundlerUrl = () => {

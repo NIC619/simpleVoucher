@@ -6,6 +6,7 @@ import { keccak256, Hex } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS, VOUCHER_BOARD_ADDRESS } from "@/config/contract";
 import { postMessageViaUserOp } from "@/lib/erc4337";
 import { targetChain } from "@/config/wagmi";
+import { MessageBoard } from "./MessageBoard";
 
 // Status enum from contract: 0 = Nonexist, 1 = Issued, 2 = Redeemed
 type VoucherStatus = 0 | 1 | 2;
@@ -416,6 +417,9 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
           )}
         </div>
       )}
+
+      {/* Message Board */}
+      <MessageBoard defaultIssuer={issuer} defaultTopic={topic} />
     </div>
   );
 }

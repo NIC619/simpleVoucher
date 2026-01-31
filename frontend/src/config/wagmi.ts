@@ -13,6 +13,9 @@ const chains: Record<string, Chain> = {
 const chainName = process.env.NEXT_PUBLIC_CHAIN || "sepolia";
 export const targetChain = chains[chainName] || sepolia;
 
+// Custom RPC URL (optional, falls back to public default)
+const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || undefined;
+
 export const config = createConfig({
   chains: [targetChain],
   ssr: true,
@@ -20,6 +23,6 @@ export const config = createConfig({
     storage: cookieStorage,
   }),
   transports: {
-    [targetChain.id]: http(),
+    [targetChain.id]: http(rpcUrl),
   },
 });
