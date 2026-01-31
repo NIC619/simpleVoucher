@@ -8,11 +8,21 @@ import { targetChain } from "@/config/wagmi";
 import { VoucherGenerator } from "./VoucherGenerator";
 
 type VoucherType = "basic" | "binding";
-type UseCase = "redeem" | "post";
+type UseCase = "post";
+
+const useCaseConfig: Record<UseCase, { label: string; description: string; urlPrefix: string; color: string; hoverColor: string }> = {
+  post: {
+    label: "Post Message",
+    description: "Anonymous posting - voucher holder can post a message to the bulletin board",
+    urlPrefix: "/post",
+    color: "bg-purple-600",
+    hoverColor: "hover:bg-purple-700",
+  },
+};
 
 export function IssuePage() {
   const [voucherType, setVoucherType] = useState<VoucherType>("basic");
-  const [useCase, setUseCase] = useState<UseCase>("redeem");
+  const [useCase, setUseCase] = useState<UseCase>("post");
   const [topic, setTopic] = useState("");
   const [submittedTopic, setSubmittedTopic] = useState("");
   const [vouchersInput, setVouchersInput] = useState("");
@@ -20,17 +30,15 @@ export function IssuePage() {
   const [copiedPreviewUrl, setCopiedPreviewUrl] = useState<string | null>(null);
   const { address, isConnected } = useAccount();
 
-  // URL path prefix based on use case
-  const getUrlPrefix = (selectedUseCase: UseCase) => {
-    return selectedUseCase === "post" ? "/post" : "/redeem";
-  };
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
+  const currentConfig = useCaseConfig[useCase];
+
   const redeemUrl = isSuccess && address && submittedTopic
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(submittedTopic)}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(submittedTopic)}`
     : "";
 
   const copyRedeemUrl = async () => {
@@ -125,33 +133,23 @@ export function IssuePage() {
           Voucher Use Case
         </label>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setUseCase("redeem")}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
-              useCase === "redeem"
-                ? "bg-green-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-          >
-            Redeem Only
-          </button>
-          <button
-            type="button"
-            onClick={() => setUseCase("post")}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
-              useCase === "post"
-                ? "bg-purple-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-          >
-            Post Message
-          </button>
+          {(Object.keys(useCaseConfig) as UseCase[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setUseCase(key)}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+                useCase === key
+                  ? `${useCaseConfig[key].color} text-white`
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              {useCaseConfig[key].label}
+            </button>
+          ))}
         </div>
         <p className="mt-1 text-xs text-gray-400">
-          {useCase === "redeem"
-            ? "Standard redemption - voucher holder can redeem directly"
-            : "Anonymous posting - voucher holder can post a message to the bulletin board"}
+          {currentConfig.description}
         </p>
       </div>
 
@@ -205,31 +203,25 @@ export function IssuePage() {
         {isConnected && topic && (
           <div className="p-4 bg-gray-800 rounded-lg space-y-4">
             <h3 className="text-sm font-medium text-gray-300">
-              {useCase === "post" ? "Post Message" : "Redeem"} Link Preview
+              {currentConfig.label} Link Preview
             </h3>
 
             {vouchers.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm text-gray-400">
-                    {useCase === "post"
-                      ? "Share these links to allow anonymous posting:"
-                      : "Share with voucher included (one-click redeem):"}
+                    Share these links with voucher holders:
                   </p>
                   {vouchers.length > 1 && (
                     <button
                       type="button"
                       onClick={() => {
                         const allUrls = vouchers.map(v =>
-                          `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(topic)}/${v}`
+                          `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(topic)}/${v}`
                         ).join("\n");
                         copyPreviewUrl(allUrls, "all");
                       }}
-                      className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${
-                        useCase === "post"
-                          ? "bg-purple-600 hover:bg-purple-700"
-                          : "bg-green-600 hover:bg-green-700"
-                      }`}
+                      className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${currentConfig.color} ${currentConfig.hoverColor}`}
                     >
                       {copiedPreviewUrl === "all" ? "Copied!" : "Copy All"}
                     </button>
@@ -237,22 +229,16 @@ export function IssuePage() {
                 </div>
                 <div className="max-h-40 overflow-y-auto space-y-2">
                   {vouchers.map((v, i) => {
-                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}${getUrlPrefix(useCase)}/${address}/${encodeURIComponent(topic)}/${v}`;
+                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(topic)}/${v}`;
                     return (
                       <div key={i} className="flex items-center gap-2">
-                        <code className={`flex-1 p-2 bg-gray-900 rounded text-xs break-all ${
-                          useCase === "post" ? "text-purple-400" : "text-green-400"
-                        }`}>
+                        <code className="flex-1 p-2 bg-gray-900 rounded text-xs break-all text-purple-400">
                           {fullUrl}
                         </code>
                         <button
                           type="button"
                           onClick={() => copyPreviewUrl(fullUrl, `voucher-${i}`)}
-                          className={`px-3 py-2 rounded text-white text-xs font-medium transition-colors whitespace-nowrap ${
-                            useCase === "post"
-                              ? "bg-purple-600 hover:bg-purple-700"
-                              : "bg-green-600 hover:bg-green-700"
-                          }`}
+                          className={`px-3 py-2 rounded text-white text-xs font-medium transition-colors whitespace-nowrap ${currentConfig.color} ${currentConfig.hoverColor}`}
                         >
                           {copiedPreviewUrl === `voucher-${i}` ? "Copied!" : "Copy"}
                         </button>
@@ -261,7 +247,7 @@ export function IssuePage() {
                   })}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  {vouchers.length} {useCase === "post" ? "post message" : "redeem"} link(s)
+                  {vouchers.length} {currentConfig.label.toLowerCase()} link(s)
                 </p>
               </div>
             )}
