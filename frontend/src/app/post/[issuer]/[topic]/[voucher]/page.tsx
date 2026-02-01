@@ -1,7 +1,5 @@
 "use client";
 
-import { ConnectButton } from "@/components/ConnectButton";
-import { NetworkGuard } from "@/components/NetworkGuard";
 import { PostMessagePage } from "@/components/PostMessagePage";
 import Link from "next/link";
 
@@ -28,7 +26,6 @@ export default function PostWithVoucher({ params }: PageProps) {
           <Link href="/" className="text-xl font-bold hover:text-purple-400 transition-colors">
             Simple Voucher
           </Link>
-          <ConnectButton />
         </div>
       </header>
 
@@ -45,13 +42,11 @@ export default function PostWithVoucher({ params }: PageProps) {
 
         <h2 className="text-2xl font-bold mb-6 text-purple-400">Post Message</h2>
 
-        <NetworkGuard>
-          <PostMessagePage
-            prefillIssuer={issuer}
-            prefillTopic={decodedTopic}
-            prefillVoucher={decodedVoucher}
-          />
-        </NetworkGuard>
+        <PostMessagePage
+          prefillIssuer={issuer}
+          prefillTopic={decodedTopic}
+          prefillVoucher={decodedVoucher}
+        />
       </div>
     </main>
   );

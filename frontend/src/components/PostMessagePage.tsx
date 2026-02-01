@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import { keccak256, Hex } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS, VOUCHER_BOARD_ADDRESS } from "@/config/contract";
 import { postMessageViaUserOp } from "@/lib/erc4337";
@@ -31,7 +31,6 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
   const [postStatus, setPostStatus] = useState<string>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { isConnected } = useAccount();
   const [hasPimlicoKey, setHasPimlicoKey] = useState(false);
 
   // Fetch server-side config (no secrets exposed)
@@ -373,9 +372,6 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
 
             {renderMessageInput()}
 
-            {!isConnected && (
-              <p className="text-yellow-500">Connect your wallet to check voucher status</p>
-            )}
           </div>
         )}
       </div>
@@ -484,9 +480,6 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
 
           {renderMessageInput()}
 
-          {!isConnected && (
-            <p className="text-yellow-500">Connect your wallet to check voucher status</p>
-          )}
         </div>
       )}
 
