@@ -1,6 +1,6 @@
 # SimpleVoucher Frontend
 
-Web interface for issuing vouchers and posting anonymous messages.
+Web interface for issuing vouchers, posting anonymous messages, and claiming tokens.
 
 ## Setup
 
@@ -28,6 +28,9 @@ Web interface for issuing vouchers and posting anonymous messages.
    # VoucherBoard contract address (for anonymous posting)
    NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS=0x...
 
+   # TokenClaim contract address (for token claims)
+   NEXT_PUBLIC_TOKEN_CLAIM_ADDRESS=0x...
+
    # Pimlico API key for ERC-4337 bundler (required for Post Message)
    PIMLICO_API_KEY=
    ```
@@ -46,6 +49,7 @@ Web interface for issuing vouchers and posting anonymous messages.
 | `NEXT_PUBLIC_CHAIN` | Yes | Target network: `mainnet`, `sepolia`, `base`, `base-sepolia` |
 | `NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS` | Yes | Deployed SimpleVoucher proxy address |
 | `NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS` | For posting | Deployed VoucherBoard proxy address |
+| `NEXT_PUBLIC_TOKEN_CLAIM_ADDRESS` | For claiming | Deployed TokenClaim contract address |
 | `RPC_URL` | No | Private RPC endpoint (server-side only, not exposed to browser) |
 | `PIMLICO_API_KEY` | For posting | Get free key at [dashboard.pimlico.io](https://dashboard.pimlico.io) (server-side only) |
 
@@ -53,9 +57,10 @@ Web interface for issuing vouchers and posting anonymous messages.
 
 | Route | Description |
 |-------|-------------|
-| `/` | Main app with Issue, Post Message, and Redeem tabs |
+| `/` | Main app with Issue, Post Message, and Claim Token tabs |
 | `/redeem/{issuer}/{topic}/{voucher}` | Direct redeem page with voucher pre-filled |
 | `/post/{issuer}/{topic}/{voucher}` | Direct post message page with voucher pre-filled |
+| `/claim/{issuer}/{topic}/{privateKey}` | Direct claim token page with binding voucher pre-filled |
 
 ## Build for Production
 

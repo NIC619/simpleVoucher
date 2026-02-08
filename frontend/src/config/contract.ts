@@ -138,3 +138,39 @@ export const VOUCHER_BOARD_ABI = [
 
 // VoucherBoard contract address
 export const VOUCHER_BOARD_ADDRESS = process.env.NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS as `0x${string}` | undefined;
+
+// TokenClaim ABI (for claiming tokens with binding vouchers)
+export const TOKEN_CLAIM_ABI = [
+  {
+    type: "function",
+    name: "claimToken",
+    inputs: [
+      { name: "issuer", type: "address" },
+      { name: "topic", type: "string" },
+      { name: "recipient", type: "address" },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "claimAmount",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "TokenClaimed",
+    inputs: [
+      { name: "recipient", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "topicHash", type: "bytes32", indexed: true },
+      { name: "voucherHash", type: "bytes32", indexed: true },
+    ],
+  },
+] as const;
+
+// TokenClaim contract address
+export const TOKEN_CLAIM_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_CLAIM_ADDRESS as `0x${string}` | undefined;

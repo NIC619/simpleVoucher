@@ -9,7 +9,7 @@ import { targetChain } from "@/config/wagmi";
 import { VoucherGenerator } from "./VoucherGenerator";
 
 type VoucherType = "basic" | "binding";
-type UseCase = "post";
+type UseCase = "post" | "claim";
 
 const useCaseConfig: Record<UseCase, { label: string; description: string; urlPrefix: string; color: string; hoverColor: string }> = {
   post: {
@@ -18,6 +18,13 @@ const useCaseConfig: Record<UseCase, { label: string; description: string; urlPr
     urlPrefix: "/post",
     color: "bg-purple-600",
     hoverColor: "hover:bg-purple-700",
+  },
+  claim: {
+    label: "Claim Token",
+    description: "Token claim - binding voucher holder can claim ERC20 tokens to their address",
+    urlPrefix: "/claim",
+    color: "bg-green-600",
+    hoverColor: "hover:bg-green-700",
   },
 };
 
@@ -113,11 +120,12 @@ export function IssuePage() {
       <div className="flex gap-4">
         <button
           onClick={() => setVoucherType("basic")}
+          disabled={useCase === "claim"}
           className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
             voucherType === "basic"
               ? "bg-blue-600 text-white"
               : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-          }`}
+          } ${useCase === "claim" ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           Basic Voucher
         </button>
@@ -143,7 +151,10 @@ export function IssuePage() {
             <button
               key={key}
               type="button"
-              onClick={() => setUseCase(key)}
+              onClick={() => {
+                setUseCase(key);
+                if (key === "claim") setVoucherType("binding");
+              }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
                 useCase === key
                   ? `${useCaseConfig[key].color} text-white`

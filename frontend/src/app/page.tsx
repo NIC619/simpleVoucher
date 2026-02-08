@@ -6,7 +6,8 @@ import { ConfigWarnings } from "@/components/ConfigWarnings";
 import { NetworkGuard } from "@/components/NetworkGuard";
 import { IssuePage } from "@/components/IssuePage";
 import { PostMessagePage } from "@/components/PostMessagePage";
-type Tab = "issue" | "post";
+import { ClaimTokenPage } from "@/components/ClaimTokenPage";
+type Tab = "issue" | "post" | "claim";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("issue");
@@ -54,12 +55,26 @@ export default function Home() {
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("claim")}
+            className={`px-6 py-3 font-medium transition-colors relative ${
+              activeTab === "claim"
+                ? "text-green-400"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Claim Token
+            {activeTab === "claim" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400" />
+            )}
+          </button>
         </div>
 
         {/* Tab Content */}
         <NetworkGuard>
           {activeTab === "issue" && <IssuePage />}
           {activeTab === "post" && <PostMessagePage />}
+          {activeTab === "claim" && <ClaimTokenPage />}
         </NetworkGuard>
       </div>
 
