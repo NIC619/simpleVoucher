@@ -22,6 +22,18 @@ export const SIMPLE_VOUCHER_ABI = [
   },
   {
     type: "function",
+    name: "redeemBindingVoucher",
+    inputs: [
+      { name: "issuer", type: "address" },
+      { name: "topic", type: "string" },
+      { name: "digest", type: "bytes32" },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "redeemVoucher",
     inputs: [
       { name: "issuer", type: "address" },

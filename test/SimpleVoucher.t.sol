@@ -269,6 +269,98 @@ contract SimpleVoucherTest is Test {
         );
     }
 
+    // ==================== Binding Voucher Tests ====================
+
+    function test_RedeemBindingVoucher() public {
+        uint256 privateKey = 0xBEEF;
+        address voucherAddr = vm.addr(privateKey);
+        bytes32 voucherHash = keccak256(abi.encodePacked(voucherAddr));
+
+        // Issue the binding voucher hash
+        bytes32[] memory hashes = new bytes32[](1);
+        hashes[0] = voucherHash;
+
+        vm.prank(issuer);
+        voucherContract.issueBasicVouchers(TOPIC, hashes);
+
+        // Redeem by signing a digest with the private key
+        bytes32 digest = keccak256(abi.encodePacked("some content"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(redeemer);
+        voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
+
+        assertEq(
+            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)),
+            uint256(SimpleVoucher.Status.Redeemed)
+        );
+    }
+
+    function test_RedeemBindingVoucher_RevertOnNonexistent() public {
+        uint256 privateKey = 0xBEEF;
+        address voucherAddr = vm.addr(privateKey);
+        bytes32 voucherHash = keccak256(abi.encodePacked(voucherAddr));
+
+        bytes32 digest = keccak256(abi.encodePacked("some content"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(redeemer);
+        vm.expectRevert(abi.encodeWithSelector(SimpleVoucher.VoucherDoesNotExist.selector, voucherHash));
+        voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
+    }
+
+    function test_RedeemBindingVoucher_RevertOnAlreadyRedeemed() public {
+        uint256 privateKey = 0xBEEF;
+        address voucherAddr = vm.addr(privateKey);
+        bytes32 voucherHash = keccak256(abi.encodePacked(voucherAddr));
+
+        bytes32[] memory hashes = new bytes32[](1);
+        hashes[0] = voucherHash;
+
+        vm.prank(issuer);
+        voucherContract.issueBasicVouchers(TOPIC, hashes);
+
+        // Redeem once
+        bytes32 digest = keccak256(abi.encodePacked("some content"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(redeemer);
+        voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
+
+        // Try to redeem again
+        vm.prank(redeemer);
+        vm.expectRevert(abi.encodeWithSelector(SimpleVoucher.VoucherAlreadyRedeemed.selector, voucherHash));
+        voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
+    }
+
+    function test_RedeemBindingVoucher_RevertOnWrongKey() public {
+        uint256 correctKey = 0xBEEF;
+        uint256 wrongKey = 0xDEAD;
+        address correctAddr = vm.addr(correctKey);
+        address wrongAddr = vm.addr(wrongKey);
+        bytes32 correctHash = keccak256(abi.encodePacked(correctAddr));
+        bytes32 wrongHash = keccak256(abi.encodePacked(wrongAddr));
+
+        // Issue with the correct key's address hash
+        bytes32[] memory hashes = new bytes32[](1);
+        hashes[0] = correctHash;
+
+        vm.prank(issuer);
+        voucherContract.issueBasicVouchers(TOPIC, hashes);
+
+        // Try to redeem with wrong key — recovered signer will produce a different hash
+        bytes32 digest = keccak256(abi.encodePacked("some content"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(redeemer);
+        vm.expectRevert(abi.encodeWithSelector(SimpleVoucher.VoucherDoesNotExist.selector, wrongHash));
+        voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
+    }
+
     function testFuzz_IssueAndRedeem(bytes32 rawVoucher, string calldata topic) public {
         vm.assume(bytes(topic).length > 0);
 

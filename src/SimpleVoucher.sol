@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title SimpleVoucher
@@ -116,6 +117,31 @@ contract SimpleVoucher is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         vouchers[issuer][topicHash][voucherHash] = Status.Redeemed;
 
+        emit VoucherRedeemed(issuer, msg.sender, topicHash, voucherHash);
+    }
+
+    /**
+     * @notice Redeem a binding voucher by providing a signature
+     * @param issuer The address that issued the voucher
+     * @param topic The topic string the voucher was issued under
+     * @param digest The digest that was signed
+     * @param signature The signature produced by the voucher's private key
+     */
+    function redeemBindingVoucher(
+        address issuer,
+        string calldata topic,
+        bytes32 digest,
+        bytes calldata signature
+    ) external {
+        address signer = ECDSA.recover(digest, signature);
+        bytes32 voucherHash = keccak256(abi.encodePacked(signer));
+        bytes32 topicHash = keccak256(abi.encodePacked(topic));
+        Status status = vouchers[issuer][topicHash][voucherHash];
+
+        if (status == Status.Nonexist) revert VoucherDoesNotExist(voucherHash);
+        if (status == Status.Redeemed) revert VoucherAlreadyRedeemed(voucherHash);
+
+        vouchers[issuer][topicHash][voucherHash] = Status.Redeemed;
         emit VoucherRedeemed(issuer, msg.sender, topicHash, voucherHash);
     }
 

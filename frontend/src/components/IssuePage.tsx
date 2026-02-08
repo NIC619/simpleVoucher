@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { keccak256 } from "viem";
+import { keccak256, encodePacked } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
 import { targetChain } from "@/config/wagmi";
 import { VoucherGenerator } from "./VoucherGenerator";
@@ -67,9 +68,16 @@ export function IssuePage() {
   // Compute hashes from vouchers
   const { vouchers, voucherHashes } = useMemo(() => {
     const vouchers = parseVouchers(vouchersInput);
-    const voucherHashes = vouchers.map((v) => keccak256(v));
+    const voucherHashes = vouchers.map((v) => {
+      if (voucherType === "binding") {
+        // v is a private key — derive address, then hash
+        const account = privateKeyToAccount(v as `0x${string}`);
+        return keccak256(encodePacked(["address"], [account.address]));
+      }
+      return keccak256(v);
+    });
     return { vouchers, voucherHashes };
-  }, [vouchersInput]);
+  }, [vouchersInput, voucherType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,16 +122,14 @@ export function IssuePage() {
           Basic Voucher
         </button>
         <button
-          disabled
-          className="flex-1 py-3 px-4 rounded-lg font-medium bg-gray-800 text-gray-500 cursor-not-allowed relative group"
+          onClick={() => setVoucherType("binding")}
+          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+            voucherType === "binding"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+          }`}
         >
           Binding Voucher
-          <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full">
-            Soon
-          </span>
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-gray-300 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Binding Voucher binds to a specific redeemer address. Coming soon!
-          </div>
         </button>
       </div>
 
@@ -171,7 +177,7 @@ export function IssuePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Vouchers (one per line or comma-separated)
+            {voucherType === "binding" ? "Private Keys" : "Vouchers"} (one per line or comma-separated)
           </label>
           <textarea
             value={vouchersInput}
@@ -182,13 +188,13 @@ export function IssuePage() {
             required
           />
           <p className="mt-1 text-sm text-gray-400">
-            {vouchers.length} voucher(s) - these are the raw values to share with redeemers
+            {vouchers.length} {voucherType === "binding" ? "private key(s)" : "voucher(s)"} - these are the raw values to share with redeemers
           </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Voucher Hashes (auto-computed, stored on-chain)
+            {voucherType === "binding" ? "Address Hashes" : "Voucher Hashes"} (auto-computed, stored on-chain)
           </label>
           <textarea
             value={voucherHashes.join("\n")}
@@ -318,7 +324,7 @@ export function IssuePage() {
       </form>
 
       {/* Voucher Generator Helper */}
-      <VoucherGenerator onUseVouchers={handleUseVouchers} />
+      <VoucherGenerator onUseVouchers={handleUseVouchers} voucherType={voucherType} />
     </div>
   );
 }

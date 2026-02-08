@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { keccak256, toHex } from "viem";
+import { keccak256, toHex, encodePacked } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 interface VoucherGeneratorProps {
   onUseVouchers: (rawVouchers: string[]) => void;
+  voucherType?: "basic" | "binding";
 }
 
-export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
+export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: VoucherGeneratorProps) {
   const [count, setCount] = useState(5);
   const [generatedVouchers, setGeneratedVouchers] = useState<string[]>([]);
   const [generatedHashes, setGeneratedHashes] = useState<string[]>([]);
@@ -25,8 +27,14 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
       vouchers.push(voucher);
 
       // Hash the voucher
-      const hash = keccak256(voucher);
-      hashes.push(hash);
+      if (voucherType === "binding") {
+        const account = privateKeyToAccount(voucher as `0x${string}`);
+        const hash = keccak256(encodePacked(["address"], [account.address]));
+        hashes.push(hash);
+      } else {
+        const hash = keccak256(voucher);
+        hashes.push(hash);
+      }
     }
 
     setGeneratedVouchers(vouchers);
@@ -73,7 +81,7 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-300">
-                Raw Vouchers (keep these secret, give to redeemers):
+                {voucherType === "binding" ? "Private Keys" : "Raw Vouchers"} (keep these secret, give to redeemers):
               </span>
               <button
                 onClick={() => copyToClipboard(generatedVouchers, "vouchers")}
@@ -94,7 +102,7 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-300">
-                Voucher Hashes (auto-computed, stored on-chain):
+                {voucherType === "binding" ? "Address Hashes" : "Voucher Hashes"} (auto-computed, stored on-chain):
               </span>
               <button
                 onClick={() => copyToClipboard(generatedHashes, "hashes")}
@@ -120,7 +128,7 @@ export function VoucherGenerator({ onUseVouchers }: VoucherGeneratorProps) {
           </button>
 
           <p className="text-xs text-yellow-500">
-            Important: Save the raw vouchers securely! You&apos;ll need to distribute them
+            Important: Save the {voucherType === "binding" ? "private keys" : "raw vouchers"} securely! You&apos;ll need to distribute them
             to people who will redeem them. Only the hashes are stored on-chain.
           </p>
         </div>
