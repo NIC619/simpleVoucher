@@ -3,21 +3,98 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colour tokens — from niclin.me */
+  --bg: #f8f7f2;
+  --surface: #fffdfa;
+  --surface-soft: #f3f1eb;
+  --text: #20201c;
+  --text-muted: #6b6b63;
+  --accent: #334e7f;
+  --accent-hover: #263d63;
+  --line: #e2dfd6;
+  --line-soft: #ede9e0;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(20, 20, 16, 0.06);
+  --shadow: 0 2px 8px rgba(20, 20, 16, 0.08), 0 1px 3px rgba(20, 20, 16, 0.05);
+  --shadow-hover: 0 4px 16px rgba(20, 20, 16, 0.10), 0 2px 6px rgba(20, 20, 16, 0.07);
+
+  /* Shape & motion */
+  --radius: 5px;
+  --transition: 0.18s ease-out;
+  --max-width: 860px;
+
+  /* Semantic status colours — muted, paper-toned */
+  --success-bg: #f2faf5;
+  --success-border: #b3d9c0;
+  --success-text: #1a5c36;
+  --warning-bg: #fdf9ed;
+  --warning-border: #dfc96e;
+  --warning-text: #6b4f10;
+  --error-bg: #fdf2f2;
+  --error-border: #d4a3a3;
+  --error-text: #5c1a1a;
+  --info-bg: #f2f5fb;
+  --info-border: #a3b4d4;
+  --info-text: #1a3060;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
-}
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif), Georgia, 'Times New Roman', serif;
+    line-height: 1.25;
+    color: var(--text);
+  }
+
+  /* Global form element base */
+  input, textarea, select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 14px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(51, 78, 127, 0.11);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  input[readonly], textarea[readonly] {
+    background: var(--surface-soft);
+    cursor: default;
+  }
+
+  input:disabled, textarea:disabled, select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  code {
+    font-family: var(--font-mono), 'Courier New', monospace;
+    font-size: 0.85em;
+    background: var(--surface-soft);
+    border: 1px solid var(--line-soft);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
 }
 
 @layer utilities {

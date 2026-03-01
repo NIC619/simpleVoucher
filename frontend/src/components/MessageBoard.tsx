@@ -68,17 +68,12 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
         address: VOUCHER_BOARD_ADDRESS,
         abi: VOUCHER_BOARD_ABI,
         eventName: "MessagePosted",
-        args: {
-          issuer: issuer as `0x${string}`,
-        },
+        args: { issuer: issuer as `0x${string}` },
         fromBlock,
         toBlock,
       });
 
-      // Client-side filter for topic (not indexed in the event)
-      const filtered = topic
-        ? logs.filter((log) => log.args.topic === topic)
-        : logs;
+      const filtered = topic ? logs.filter((log) => log.args.topic === topic) : logs;
 
       const results: MessageEvent[] = filtered.map((log) => ({
         issuer: log.args.issuer as string,
@@ -89,9 +84,7 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
         transactionHash: log.transactionHash,
       }));
 
-      // Sort newest first
       results.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-
       setMessages(results);
     } catch (err) {
       console.error("Failed to query messages:", err);
@@ -108,9 +101,9 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
 
   if (!VOUCHER_BOARD_ADDRESS) {
     return (
-      <div className="mt-8 p-4 border border-gray-600 rounded-lg bg-gray-800">
-        <h3 className="text-lg font-semibold mb-2 text-purple-400">Message Board</h3>
-        <p className="text-sm text-yellow-400">
+      <div className="mt-8 p-4 border border-line rounded-[var(--radius)] bg-surface">
+        <h3 className="text-base font-semibold mb-2">Message Board</h3>
+        <p className="text-sm" style={{ color: "var(--warning-text)" }}>
           VoucherBoard contract address not configured. Set NEXT_PUBLIC_VOUCHER_BOARD_ADDRESS in .env.local
         </p>
       </div>
@@ -121,45 +114,41 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
   const displayedMessages = messages.slice(0, MAX_DISPLAY);
 
   return (
-    <div className="mt-8 p-4 border border-gray-600 rounded-lg bg-gray-800 space-y-4">
+    <div className="mt-8 p-4 border border-line rounded-[var(--radius)] bg-surface space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-purple-400">Message Board</h3>
-        <p className="text-sm text-gray-400">Search for posted messages by issuer and topic</p>
+        <h3 className="text-base font-semibold">Message Board</h3>
+        <p className="text-sm text-muted">Search for posted messages by issuer and topic</p>
       </div>
 
       {/* Search Form */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Issuer Address
-          </label>
+          <label className="block text-sm font-medium mb-1">Issuer Address</label>
           <input
             type="text"
             value={issuer}
             onChange={(e) => setIssuer(e.target.value)}
             placeholder="0x..."
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+            className="w-full px-3 py-2 font-mono text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Topic <span className="text-gray-500">(optional)</span>
+          <label className="block text-sm font-medium mb-1">
+            Topic <span className="text-muted font-normal">(optional)</span>
           </label>
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Leave empty to show all topics"
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+            className="w-full px-3 py-2 text-sm"
           />
         </div>
 
         {/* Block Range Controls */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Block Range
-          </label>
+          <label className="block text-sm font-medium mb-1">Block Range</label>
           <div className="flex gap-2 items-start">
             <select
               value={rangeMode === "custom" ? "custom" : String(blockRange)}
@@ -171,7 +160,7 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
                   setBlockRange(Number(e.target.value));
                 }
               }}
-              className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
+              className="px-3 py-2 text-sm"
             >
               <option value="1000">Last 1,000 blocks</option>
               <option value="5000">Last 5,000 blocks</option>
@@ -187,15 +176,15 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
                   value={customFromBlock}
                   onChange={(e) => setCustomFromBlock(e.target.value)}
                   placeholder="From block (0)"
-                  className="w-36 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm font-mono"
+                  className="w-36 px-3 py-2 text-sm font-mono"
                 />
-                <span className="text-gray-400">to</span>
+                <span className="text-muted">to</span>
                 <input
                   type="text"
                   value={customToBlock}
                   onChange={(e) => setCustomToBlock(e.target.value)}
                   placeholder="To block (latest)"
-                  className="w-36 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm font-mono"
+                  className="w-36 px-3 py-2 text-sm font-mono"
                 />
               </div>
             )}
@@ -206,63 +195,62 @@ export function MessageBoard({ defaultIssuer, defaultTopic }: MessageBoardProps)
           type="button"
           onClick={handleSearch}
           disabled={isLoading || !issuer}
-          className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors text-sm"
+          className="w-full py-2 px-4 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-[var(--radius)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isLoading ? "Searching..." : "Search Messages"}
         </button>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-300 text-sm">
+        <div
+          className="p-3 border rounded-[var(--radius)] text-sm"
+          style={{ background: "var(--error-bg)", borderColor: "var(--error-border)", color: "var(--error-text)" }}
+        >
           {error}
         </div>
       )}
 
-      {/* Results */}
       {searchPerformed && !isLoading && !error && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-400">
-              {messages.length === 0
-                ? "No messages found"
-                : `Found ${messages.length} message(s)`}
+            <p className="text-sm text-muted">
+              {messages.length === 0 ? "No messages found" : `Found ${messages.length} message(s)`}
               {messages.length > MAX_DISPLAY && ` (showing first ${MAX_DISPLAY})`}
             </p>
             {searchedRange && (
-              <p className="text-xs text-gray-500">
-                Blocks {searchedRange.from.toString()} - {searchedRange.to.toString()}
+              <p className="text-xs text-muted">
+                Blocks {searchedRange.from.toString()} – {searchedRange.to.toString()}
               </p>
             )}
           </div>
 
           {messages.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Try expanding the block range or checking the issuer address and topic.
             </p>
           )}
 
           {displayedMessages.length > 0 && (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {displayedMessages.map((msg, i) => (
-                <div key={i} className="p-3 bg-gray-900 rounded-lg border border-gray-700 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>Topic: <span className="text-purple-300">{msg.topic}</span></span>
+                <div key={i} className="p-3 bg-bg border border-line rounded-[var(--radius)] space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted">
+                    <span>
+                      Topic: <span className="text-accent">{msg.topic}</span>
+                    </span>
                     <span>Block #{msg.blockNumber.toString()}</span>
                   </div>
-                  <p className="text-white text-sm whitespace-pre-wrap break-words">
-                    {msg.message}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                  <div className="flex items-center justify-between text-xs text-muted">
                     <span className="font-mono" title={msg.voucherHash}>
-                      Voucher: {msg.voucherHash.slice(0, 10)}...{msg.voucherHash.slice(-8)}
+                      {msg.voucherHash.slice(0, 10)}...{msg.voucherHash.slice(-8)}
                     </span>
                     {explorerUrl && (
                       <a
                         href={`${explorerUrl}/tx/${msg.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-purple-400 hover:text-purple-300 underline"
+                        className="text-accent hover:text-accent-hover underline"
                       >
                         View tx
                       </a>

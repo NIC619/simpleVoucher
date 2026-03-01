@@ -7,7 +7,14 @@ import { NetworkGuard } from "@/components/NetworkGuard";
 import { IssuePage } from "@/components/IssuePage";
 import { PostMessagePage } from "@/components/PostMessagePage";
 import { ClaimTokenPage } from "@/components/ClaimTokenPage";
+
 type Tab = "issue" | "post" | "claim";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "issue", label: "Issue Vouchers" },
+  { id: "post", label: "Post Message" },
+  { id: "claim", label: "Claim Token" },
+];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("issue");
@@ -15,59 +22,35 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-gray-700 bg-gray-800/50">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Simple Voucher</h1>
+      <header className="border-b border-line bg-surface shadow-paper-sm">
+        <div className="max-w-[var(--max-width)] mx-auto px-6 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold tracking-tight">Simple Voucher</h1>
           <ConnectButton />
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Config Warnings */}
+      <div className="max-w-[var(--max-width)] mx-auto px-6 py-8">
         <ConfigWarnings />
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-700 mb-8">
-          <button
-            onClick={() => setActiveTab("issue")}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === "issue"
-                ? "text-blue-400"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            Issue Vouchers
-            {activeTab === "issue" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("post")}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === "post"
-                ? "text-purple-400"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            Post Message
-            {activeTab === "post" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("claim")}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === "claim"
-                ? "text-green-400"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            Claim Token
-            {activeTab === "claim" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400" />
-            )}
-          </button>
+        <div className="flex border-b border-line mb-8">
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`px-5 py-2.5 text-sm font-medium transition-colors relative ${
+                activeTab === id
+                  ? "text-accent"
+                  : "text-muted hover:text-[var(--text)]"
+              }`}
+            >
+              {label}
+              {activeTab === id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}
@@ -79,18 +62,18 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-700 mt-16">
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
+      <footer className="border-t border-line mt-16">
+        <div className="max-w-[var(--max-width)] mx-auto px-6 py-6 text-center">
           <a
             href="https://github.com/NIC619/simpleVoucher"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white transition-colors inline-block"
+            className="text-muted hover:text-accent transition-colors inline-block"
           >
             <svg
               viewBox="0 0 24 24"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               fill="currentColor"
               aria-label="GitHub"
             >

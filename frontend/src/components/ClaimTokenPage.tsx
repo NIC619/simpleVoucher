@@ -29,14 +29,12 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  // Auto-fill recipient from connected wallet
   useEffect(() => {
     if (connectedAddress && !recipientAddress) {
       setRecipientAddress(connectedAddress);
     }
   }, [connectedAddress, recipientAddress]);
 
-  // Derive voucher address hash from private key for status check
   const voucherHash = useMemo(() => {
     if (!voucherPrivateKey) return null;
     try {
@@ -48,7 +46,6 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
     }
   }, [voucherPrivateKey]);
 
-  // Check voucher status
   const shouldCheck = checkTriggered && issuer && topic && voucherHash && SIMPLE_VOUCHER_ADDRESS;
 
   const { data: statusData, isLoading: isChecking, error: checkError, refetch } = useReadContract({
@@ -61,7 +58,6 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
 
   const voucherStatus = statusData as VoucherStatus | undefined;
 
-  // Auto-check when prefilled
   useEffect(() => {
     if (prefillIssuer) setIssuer(prefillIssuer);
     if (prefillTopic) setTopic(prefillTopic);
@@ -71,14 +67,12 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
     }
   }, [prefillIssuer, prefillTopic, prefillVoucher]);
 
-  // Reset check when inputs change (manual mode)
   useEffect(() => {
     if (!prefillVoucher) {
       setCheckTriggered(false);
     }
   }, [issuer, topic, voucherPrivateKey, prefillVoucher]);
 
-  // Parse voucher URL
   const parseVoucherUrl = (url: string): { issuer: string; topic: string; voucher: string } | null => {
     try {
       let pathname: string;
@@ -153,19 +147,15 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
   };
 
   const getStatusMessage = () => {
-    if (isChecking) return { type: "loading", message: "Checking voucher status..." };
-    if (checkError) return { type: "error", message: "Failed to check voucher status" };
+    if (isChecking) return { type: "info" as const, message: "Checking voucher status..." };
+    if (checkError) return { type: "error" as const, message: "Failed to check voucher status" };
     if (voucherStatus === undefined) return null;
 
     switch (voucherStatus) {
-      case 0:
-        return { type: "error", message: "Voucher does not exist or invalid issuer/topic" };
-      case 1:
-        return { type: "success", message: "Voucher is valid and can be used to claim tokens" };
-      case 2:
-        return { type: "warning", message: "Voucher has already been redeemed" };
-      default:
-        return null;
+      case 0: return { type: "error" as const, message: "Voucher does not exist or invalid issuer/topic" };
+      case 1: return { type: "success" as const, message: "Voucher is valid and can be used to claim tokens" };
+      case 2: return { type: "warning" as const, message: "Voucher has already been redeemed" };
+      default: return null;
     }
   };
 
@@ -175,29 +165,31 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
   const renderStatusBanners = () => (
     <>
       {statusMessage && (
-        <div className={`p-3 rounded-lg text-sm ${
-          statusMessage.type === "success"
-            ? "bg-green-900/50 border border-green-500 text-green-300"
-            : statusMessage.type === "warning"
-            ? "bg-yellow-900/50 border border-yellow-500 text-yellow-300"
-            : statusMessage.type === "error"
-            ? "bg-red-900/50 border border-red-500 text-red-300"
-            : "bg-gray-800 text-gray-300"
-        }`}>
+        <div
+          className="p-3 border rounded-[var(--radius)] text-sm"
+          style={{
+            background: `var(--${statusMessage.type}-bg)`,
+            borderColor: `var(--${statusMessage.type}-border)`,
+            color: `var(--${statusMessage.type}-text)`,
+          }}
+        >
           {statusMessage.message}
         </div>
       )}
 
       {isSuccess && (
-        <div className="p-4 bg-green-900/50 border border-green-500 rounded-lg text-green-300 space-y-3">
+        <div
+          className="p-4 border rounded-[var(--radius)] text-sm space-y-3"
+          style={{ background: "var(--success-bg)", borderColor: "var(--success-border)", color: "var(--success-text)" }}
+        >
           <p className="font-medium">Tokens claimed successfully!</p>
-          <p className="text-sm">Tokens have been sent to {recipientAddress}</p>
+          <p>Tokens have been sent to {recipientAddress}</p>
           {hash && targetChain.blockExplorers?.default && (
             <a
               href={`${targetChain.blockExplorers.default.url}/tx/${hash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm underline block"
+              className="underline block"
             >
               View transaction on {targetChain.blockExplorers.default.name}
             </a>
@@ -206,7 +198,10 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
       )}
 
       {writeError && (
-        <div className="p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-300 text-sm">
+        <div
+          className="p-3 border rounded-[var(--radius)] text-sm"
+          style={{ background: "var(--error-bg)", borderColor: "var(--error-border)", color: "var(--error-text)" }}
+        >
           <p className="font-medium">Error claiming tokens</p>
           <p className="mt-1 break-all">{writeError.message}</p>
         </div>
@@ -218,19 +213,19 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
     <>
       {voucherStatus === 1 && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Recipient Address
-          </label>
+          <label className="block text-sm font-medium mb-1.5">Recipient Address</label>
           <input
             type="text"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
             placeholder="0x... (auto-filled from connected wallet)"
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+            className="w-full px-3 py-2 font-mono"
             disabled={isPending || isConfirming}
           />
-          <p className="mt-1 text-sm text-gray-400">
-            {connectedAddress ? "Auto-filled from your connected wallet. You can change it." : "Connect your wallet to auto-fill, or enter an address manually."}
+          <p className="mt-1 text-xs text-muted">
+            {connectedAddress
+              ? "Auto-filled from your connected wallet. You can change it."
+              : "Connect your wallet to auto-fill, or enter an address manually."}
           </p>
         </div>
       )}
@@ -240,13 +235,9 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
           type="button"
           onClick={handleClaim}
           disabled={!canClaim}
-          className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+          className="w-full py-2.5 px-4 bg-accent hover:bg-accent-hover text-white font-medium rounded-[var(--radius)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isPending
-            ? "Confirm in Wallet..."
-            : isConfirming
-            ? "Confirming..."
-            : "Claim Tokens"}
+          {isPending ? "Confirm in Wallet..." : isConfirming ? "Confirming..." : "Claim Tokens"}
         </button>
       )}
     </>
@@ -261,33 +252,25 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
         {!isSuccess && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Issuer Address
-              </label>
-              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300 font-mono break-all">
+              <label className="block text-sm font-medium mb-1.5">Issuer Address</label>
+              <div className="w-full px-3 py-2 bg-surface-soft border border-line rounded-[var(--radius)] text-sm font-mono break-all text-muted">
                 {issuer}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Topic
-              </label>
-              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300">
+              <label className="block text-sm font-medium mb-1.5">Topic</label>
+              <div className="w-full px-3 py-2 bg-surface-soft border border-line rounded-[var(--radius)] text-sm text-muted">
                 {topic}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Voucher (private key)
-              </label>
-              <div className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300 font-mono break-all">
+              <label className="block text-sm font-medium mb-1.5">Voucher <span className="text-muted font-normal">(private key)</span></label>
+              <div className="w-full px-3 py-2 bg-surface-soft border border-line rounded-[var(--radius)] text-sm font-mono break-all text-muted">
                 {voucherPrivateKey.slice(0, 10)}...{voucherPrivateKey.slice(-8)}
               </div>
-              <p className="mt-1 text-sm text-gray-400">
-                Your voucher will be consumed after claiming
-              </p>
+              <p className="mt-1 text-xs text-muted">Your voucher will be consumed after claiming</p>
             </div>
 
             {renderRecipientAndClaim()}
@@ -301,7 +284,10 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <div className="p-3 bg-green-900/30 border border-green-500/50 rounded-lg text-green-300 text-sm">
+      <div
+        className="p-3 border rounded-[var(--radius)] text-sm"
+        style={{ background: "var(--info-bg)", borderColor: "var(--info-border)", color: "var(--info-text)" }}
+      >
         <p className="font-medium mb-1">Claim Tokens</p>
         <p>Use a binding voucher to claim ERC20 tokens. The voucher&apos;s private key signs your recipient address to authorize the claim.</p>
       </div>
@@ -312,86 +298,73 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
         <div className="space-y-4">
           {/* URL Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Claim URL (paste to auto-fill)
-            </label>
+            <label className="block text-sm font-medium mb-1.5">Claim URL <span className="text-muted font-normal">(paste to auto-fill)</span></label>
             <input
               type="text"
               value={voucherUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
               placeholder="https://example.com/claim/0x.../topic/privateKey"
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm"
+              className="w-full px-3 py-2 font-mono text-sm"
               disabled={isPending || isConfirming}
             />
-            {urlError && (
-              <p className="mt-1 text-sm text-red-400">{urlError}</p>
-            )}
+            {urlError && <p className="mt-1 text-sm" style={{ color: "var(--error-text)" }}>{urlError}</p>}
           </div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600" />
+              <div className="w-full border-t border-line" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-900 text-gray-400">or fill manually</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-bg text-muted">or fill manually</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Issuer Address
-            </label>
+            <label className="block text-sm font-medium mb-1.5">Issuer Address</label>
             <input
               type="text"
               value={issuer}
               onChange={(e) => setIssuer(e.target.value)}
               placeholder="0x..."
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+              className="w-full px-3 py-2 font-mono"
               disabled={isPending || isConfirming}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Topic
-            </label>
+            <label className="block text-sm font-medium mb-1.5">Topic</label>
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g., event-2024"
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2"
               disabled={isPending || isConfirming}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Voucher Private Key
-            </label>
+            <label className="block text-sm font-medium mb-1.5">Voucher Private Key</label>
             <input
               type="text"
               value={voucherPrivateKey}
               onChange={(e) => setVoucherPrivateKey(e.target.value)}
               placeholder="0x..."
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+              className="w-full px-3 py-2 font-mono"
               disabled={isPending || isConfirming}
               required
             />
-            <p className="mt-1 text-sm text-gray-400">
-              Your voucher will be consumed after claiming
-            </p>
+            <p className="mt-1 text-xs text-muted">Your voucher will be consumed after claiming</p>
           </div>
 
-          {/* Check Voucher Button */}
           {issuer && topic && voucherPrivateKey && !checkTriggered && (
             <button
               type="button"
               onClick={handleCheckVoucher}
               disabled={isChecking || isPending || isConfirming}
-              className="w-full py-2 px-4 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 rounded-lg font-medium transition-colors text-sm"
+              className="w-full py-2 px-4 border border-line text-sm font-medium text-muted hover:border-accent hover:text-accent rounded-[var(--radius)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isChecking ? "Checking..." : "Check Voucher Validity"}
             </button>

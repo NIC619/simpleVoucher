@@ -20,13 +20,11 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
     const hashes: string[] = [];
 
     for (let i = 0; i < count; i++) {
-      // Generate random 32 bytes
       const randomBytes = new Uint8Array(32);
       crypto.getRandomValues(randomBytes);
       const voucher = toHex(randomBytes);
       vouchers.push(voucher);
 
-      // Hash the voucher
       if (voucherType === "binding") {
         const account = privateKeyToAccount(voucher as `0x${string}`);
         const hash = keccak256(encodePacked(["address"], [account.address]));
@@ -41,10 +39,7 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
     setGeneratedHashes(hashes);
   };
 
-  const copyToClipboard = async (
-    items: string[],
-    type: "vouchers" | "hashes"
-  ) => {
+  const copyToClipboard = async (items: string[], type: "vouchers" | "hashes") => {
     await navigator.clipboard.writeText(items.join("\n"));
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
@@ -55,22 +50,22 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
   };
 
   return (
-    <div className="mt-8 p-4 border border-gray-600 rounded-lg bg-gray-800">
-      <h3 className="text-lg font-semibold mb-4">Voucher Generator Helper</h3>
+    <div className="p-4 border border-line rounded-[var(--radius)] bg-surface">
+      <h3 className="text-base font-semibold mb-4">Voucher Generator</h3>
 
       <div className="flex items-center gap-4 mb-4">
-        <label className="text-sm text-gray-300">Number of vouchers:</label>
+        <label className="text-sm text-muted">Number of vouchers:</label>
         <input
           type="number"
           min={1}
           max={100}
           value={count}
           onChange={(e) => setCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
-          className="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white"
+          className="w-20 px-2 py-1 text-sm"
         />
         <button
           onClick={generateVouchers}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+          className="px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-[var(--radius)] transition-colors"
         >
           Generate
         </button>
@@ -80,19 +75,20 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-300">
-                {voucherType === "binding" ? "Private Keys" : "Raw Vouchers"} (keep these secret, give to redeemers):
+              <span className="text-sm font-medium">
+                {voucherType === "binding" ? "Private Keys" : "Raw Vouchers"}{" "}
+                <span className="text-muted font-normal">(distribute to redeemers)</span>
               </span>
               <button
                 onClick={() => copyToClipboard(generatedVouchers, "vouchers")}
-                className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                className="text-xs px-3 py-1 border border-line text-muted hover:border-accent hover:text-accent rounded-[var(--radius)] transition-colors"
               >
                 {copied === "vouchers" ? "Copied!" : "Copy All"}
               </button>
             </div>
-            <div className="max-h-32 overflow-y-auto bg-gray-900 p-2 rounded text-xs font-mono">
+            <div className="max-h-32 overflow-y-auto bg-surface-soft border border-line-soft rounded-[var(--radius)] p-2 text-xs font-mono">
               {generatedVouchers.map((v, i) => (
-                <div key={i} className="text-gray-400 truncate">
+                <div key={i} className="text-[var(--text-muted)] truncate">
                   {v}
                 </div>
               ))}
@@ -101,19 +97,20 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-300">
-                {voucherType === "binding" ? "Address Hashes" : "Voucher Hashes"} (auto-computed, stored on-chain):
+              <span className="text-sm font-medium">
+                {voucherType === "binding" ? "Address Hashes" : "Voucher Hashes"}{" "}
+                <span className="text-muted font-normal">(stored on-chain)</span>
               </span>
               <button
                 onClick={() => copyToClipboard(generatedHashes, "hashes")}
-                className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                className="text-xs px-3 py-1 border border-line text-muted hover:border-accent hover:text-accent rounded-[var(--radius)] transition-colors"
               >
                 {copied === "hashes" ? "Copied!" : "Copy All"}
               </button>
             </div>
-            <div className="max-h-32 overflow-y-auto bg-gray-900 p-2 rounded text-xs font-mono">
+            <div className="max-h-32 overflow-y-auto bg-surface-soft border border-line-soft rounded-[var(--radius)] p-2 text-xs font-mono">
               {generatedHashes.map((h, i) => (
-                <div key={i} className="text-green-400 truncate">
+                <div key={i} className="text-accent truncate">
                   {h}
                 </div>
               ))}
@@ -122,14 +119,13 @@ export function VoucherGenerator({ onUseVouchers, voucherType = "basic" }: Vouch
 
           <button
             onClick={useVouchers}
-            className="w-full py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors"
+            className="w-full py-2 border border-accent text-accent hover:bg-surface-soft text-sm font-medium rounded-[var(--radius)] transition-colors"
           >
             Use These Vouchers
           </button>
 
-          <p className="text-xs text-yellow-500">
-            Important: Save the {voucherType === "binding" ? "private keys" : "raw vouchers"} securely! You&apos;ll need to distribute them
-            to people who will redeem them. Only the hashes are stored on-chain.
+          <p className="text-xs" style={{ color: "var(--warning-text)" }}>
+            Save the {voucherType === "binding" ? "private keys" : "raw vouchers"} securely — distribute them to redeemers. Only hashes are stored on-chain.
           </p>
         </div>
       )}
