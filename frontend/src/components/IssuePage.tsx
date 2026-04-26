@@ -6,21 +6,22 @@ import { keccak256, encodePacked } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
 import { targetChain } from "@/config/wagmi";
+import { buildVoucherUrl, type VoucherRoute } from "@/lib/voucherUrl";
 import { VoucherGenerator } from "./VoucherGenerator";
 
 type VoucherType = "basic" | "binding";
 type UseCase = "post" | "claim";
 
-const useCaseConfig: Record<UseCase, { label: string; description: string; urlPrefix: string }> = {
+const useCaseConfig: Record<UseCase, { label: string; description: string; route: VoucherRoute }> = {
   post: {
     label: "Post Message",
     description: "Anonymous posting — voucher holder can post a message to the bulletin board",
-    urlPrefix: "/post",
+    route: "post",
   },
   claim: {
     label: "Claim Token",
     description: "Token claim — binding voucher holder can claim ERC20 tokens to their address",
-    urlPrefix: "/claim",
+    route: "claim",
   },
 };
 
@@ -45,6 +46,8 @@ export function IssuePage() {
   const [useCase, setUseCase] = useState<UseCase>("post");
   const [topic, setTopic] = useState("");
   const [submittedTopic, setSubmittedTopic] = useState("");
+  const [submittedVouchers, setSubmittedVouchers] = useState<`0x${string}`[]>([]);
+  const [submittedRoute, setSubmittedRoute] = useState<VoucherRoute | null>(null);
   const [vouchersInput, setVouchersInput] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
   const [copiedPreviewUrl, setCopiedPreviewUrl] = useState<string | null>(null);
@@ -55,14 +58,23 @@ export function IssuePage() {
 
   const currentConfig = useCaseConfig[useCase];
 
-  const redeemUrl =
-    isSuccess && address && submittedTopic
-      ? `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(submittedTopic)}`
-      : "";
+  const issuedUrls =
+    isSuccess && address && submittedTopic && submittedRoute
+      ? submittedVouchers.map(
+          (voucher) =>
+            buildVoucherUrl({
+              origin: typeof window !== "undefined" ? window.location.origin : "",
+              route: submittedRoute,
+              issuer: address,
+              topic: submittedTopic,
+              voucher,
+            })
+        )
+      : [];
 
   const copyRedeemUrl = async () => {
-    if (redeemUrl) {
-      await navigator.clipboard.writeText(redeemUrl);
+    if (issuedUrls.length > 0) {
+      await navigator.clipboard.writeText(issuedUrls.join("\n"));
       setUrlCopied(true);
       setTimeout(() => setUrlCopied(false), 2000);
     }
@@ -98,7 +110,7 @@ export function IssuePage() {
     e.preventDefault();
 
     if (!SIMPLE_VOUCHER_ADDRESS) {
-      alert("Contract address not configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS in .env.local");
+      alert("Contract address not configured. Set NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS in .env.local");
       return;
     }
 
@@ -108,6 +120,8 @@ export function IssuePage() {
     }
 
     setSubmittedTopic(topic);
+    setSubmittedVouchers(vouchers);
+    setSubmittedRoute(currentConfig.route);
     setUrlCopied(false);
 
     writeContract({
@@ -209,7 +223,7 @@ export function IssuePage() {
         </div>
 
         {/* URL Preview */}
-        {isConnected && topic && (
+        {isConnected && address && topic && (
           <div className="p-4 bg-surface border border-line rounded-[var(--radius)] space-y-3">
             <h3 className="text-sm font-medium">{currentConfig.label} Link Preview</h3>
 
@@ -224,7 +238,13 @@ export function IssuePage() {
                         const allUrls = vouchers
                           .map(
                             (v) =>
-                              `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(topic)}/${v}`
+                              buildVoucherUrl({
+                                origin: typeof window !== "undefined" ? window.location.origin : "",
+                                route: currentConfig.route,
+                                issuer: address,
+                                topic,
+                                voucher: v,
+                              })
                           )
                           .join("\n");
                         copyPreviewUrl(allUrls, "all");
@@ -237,7 +257,13 @@ export function IssuePage() {
                 </div>
                 <div className="max-h-40 overflow-y-auto space-y-2">
                   {vouchers.map((v, i) => {
-                    const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}${currentConfig.urlPrefix}/${address}/${encodeURIComponent(topic)}/${v}`;
+                    const fullUrl = buildVoucherUrl({
+                      origin: typeof window !== "undefined" ? window.location.origin : "",
+                      route: currentConfig.route,
+                      issuer: address,
+                      topic,
+                      voucher: v,
+                    });
                     return (
                       <div key={i} className="flex items-center gap-2">
                         <code className="flex-1 p-2 bg-surface-soft border border-line-soft rounded text-xs break-all text-accent" style={{ fontFamily: "var(--font-mono)" }}>
@@ -307,23 +333,28 @@ export function IssuePage() {
               </a>
             )}
 
-            {redeemUrl && (
+            {issuedUrls.length > 0 && (
               <div className="pt-3 border-t" style={{ borderColor: "var(--success-border)" }}>
-                <p className="mb-2">Share this redeem link with voucher holders:</p>
-                <div className="flex items-center gap-2">
-                  <code
-                    className="flex-1 p-2 bg-surface-soft border border-line-soft rounded text-xs break-all text-accent"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {redeemUrl}
-                  </code>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <p>Share these links with voucher holders:</p>
                   <button
                     type="button"
                     onClick={copyRedeemUrl}
                     className="px-3 py-1.5 text-xs font-medium border border-line text-muted hover:border-accent hover:text-accent rounded-[var(--radius)] transition-colors whitespace-nowrap"
                   >
-                    {urlCopied ? "Copied!" : "Copy URL"}
+                    {urlCopied ? "Copied!" : "Copy All"}
                   </button>
+                </div>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {issuedUrls.map((issuedUrl, index) => (
+                    <code
+                      key={`${issuedUrl}-${index}`}
+                      className="block p-2 bg-surface-soft border border-line-soft rounded text-xs break-all text-accent"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {issuedUrl}
+                    </code>
+                  ))}
                 </div>
               </div>
             )}

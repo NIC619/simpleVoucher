@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { keccak256 } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS } from "@/config/contract";
+import { targetChain } from "@/config/wagmi";
 
 // Status enum from contract: 0 = Nonexist, 1 = Issued, 2 = Redeemed
 type VoucherStatus = 0 | 1 | 2;
@@ -70,7 +71,7 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
     e.preventDefault();
 
     if (!SIMPLE_VOUCHER_ADDRESS) {
-      alert("Contract address not configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS in .env.local");
+      alert("Contract address not configured. Set NEXT_PUBLIC_SIMPLE_VOUCHER_ADDRESS in .env.local");
       return;
     }
 
@@ -214,14 +215,16 @@ export function RedeemPage({ prefillIssuer, prefillTopic, prefillVoucher }: Rede
             style={{ background: "var(--success-bg)", borderColor: "var(--success-border)", color: "var(--success-text)" }}
           >
             <p>Voucher redeemed successfully!</p>
-            <a
-              href={`https://sepolia.etherscan.io/tx/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline block"
-            >
-              View transaction
-            </a>
+            {targetChain.blockExplorers?.default && (
+              <a
+                href={`${targetChain.blockExplorers.default.url}/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline block"
+              >
+                View transaction on {targetChain.blockExplorers.default.name}
+              </a>
+            )}
             <button
               onClick={handleReset}
               className="text-sm px-3 py-1 border rounded-[var(--radius)] transition-colors"

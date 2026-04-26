@@ -6,6 +6,7 @@ import { keccak256, Hex } from "viem";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS, VOUCHER_BOARD_ADDRESS } from "@/config/contract";
 import { postMessageViaUserOp } from "@/lib/erc4337";
 import { targetChain } from "@/config/wagmi";
+import { parseVoucherUrl } from "@/lib/voucherUrl";
 import { MessageBoard } from "./MessageBoard";
 
 // Status enum from contract: 0 = Nonexist, 1 = Issued, 2 = Redeemed
@@ -39,47 +40,13 @@ export function PostMessagePage({ prefillIssuer, prefillTopic, prefillVoucher }:
       .catch(() => setHasPimlicoKey(false));
   }, []);
 
-  const parseVoucherUrl = (url: string): { issuer: string; topic: string; voucher: string } | null => {
-    try {
-      let pathname: string;
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        const urlObj = new URL(url);
-        pathname = urlObj.pathname;
-      } else if (url.startsWith("/")) {
-        pathname = url;
-      } else {
-        pathname = "/" + url;
-      }
-
-      let parts = pathname.slice(1).split("/").filter(Boolean);
-
-      if (parts.length > 0 && (parts[0] === "redeem" || parts[0] === "post")) {
-        parts = parts.slice(1);
-      }
-
-      if (parts.length < 3) return null;
-
-      const [issuerPart, topicPart, voucherPart] = parts;
-
-      if (!issuerPart.startsWith("0x") || issuerPart.length !== 42) return null;
-
-      return {
-        issuer: issuerPart,
-        topic: decodeURIComponent(topicPart),
-        voucher: decodeURIComponent(voucherPart),
-      };
-    } catch {
-      return null;
-    }
-  };
-
   const handleUrlChange = (url: string) => {
     setVoucherUrl(url);
     setUrlError(null);
 
     if (!url.trim()) return;
 
-    const parsed = parseVoucherUrl(url);
+    const parsed = parseVoucherUrl(url, ["redeem", "post"]);
     if (parsed) {
       setIssuer(parsed.issuer);
       setTopic(parsed.topic);

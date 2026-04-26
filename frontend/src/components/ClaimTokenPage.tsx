@@ -6,6 +6,7 @@ import { keccak256, encodePacked } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { SIMPLE_VOUCHER_ABI, SIMPLE_VOUCHER_ADDRESS, TOKEN_CLAIM_ABI, TOKEN_CLAIM_ADDRESS } from "@/config/contract";
 import { targetChain } from "@/config/wagmi";
+import { parseVoucherUrl } from "@/lib/voucherUrl";
 
 type VoucherStatus = 0 | 1 | 2;
 
@@ -73,42 +74,12 @@ export function ClaimTokenPage({ prefillIssuer, prefillTopic, prefillVoucher }: 
     }
   }, [issuer, topic, voucherPrivateKey, prefillVoucher]);
 
-  const parseVoucherUrl = (url: string): { issuer: string; topic: string; voucher: string } | null => {
-    try {
-      let pathname: string;
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        pathname = new URL(url).pathname;
-      } else if (url.startsWith("/")) {
-        pathname = url;
-      } else {
-        pathname = "/" + url;
-      }
-
-      let parts = pathname.slice(1).split("/").filter(Boolean);
-      if (parts.length > 0 && (parts[0] === "claim" || parts[0] === "redeem" || parts[0] === "post")) {
-        parts = parts.slice(1);
-      }
-      if (parts.length < 3) return null;
-
-      const [issuerPart, topicPart, voucherPart] = parts;
-      if (!issuerPart.startsWith("0x") || issuerPart.length !== 42) return null;
-
-      return {
-        issuer: issuerPart,
-        topic: decodeURIComponent(topicPart),
-        voucher: decodeURIComponent(voucherPart),
-      };
-    } catch {
-      return null;
-    }
-  };
-
   const handleUrlChange = (url: string) => {
     setVoucherUrl(url);
     setUrlError(null);
     if (!url.trim()) return;
 
-    const parsed = parseVoucherUrl(url);
+    const parsed = parseVoucherUrl(url, ["claim", "redeem", "post"]);
     if (parsed) {
       setIssuer(parsed.issuer);
       setTopic(parsed.topic);
