@@ -21,10 +21,7 @@ contract TokenClaimTest is Test {
     uint256 public constant CLAIM_AMOUNT = 100 ether;
 
     event TokenClaimed(
-        address indexed recipient,
-        uint256 amount,
-        bytes32 indexed topicHash,
-        bytes32 indexed voucherHash
+        address indexed recipient, uint256 amount, bytes32 indexed topicHash, bytes32 indexed voucherHash
     );
 
     function setUp() public {
@@ -51,7 +48,7 @@ contract TokenClaimTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
     }
 
     function _signRecipient(uint256 privateKey, address recipient_) internal pure returns (bytes memory) {
@@ -75,8 +72,7 @@ contract TokenClaimTest is Test {
 
         // Verify voucher redeemed
         assertEq(
-            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)),
-            uint256(SimpleVoucher.Status.Redeemed)
+            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)), uint256(SimpleVoucher.Status.Redeemed)
         );
     }
 

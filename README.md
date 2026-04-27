@@ -16,6 +16,13 @@ A simple on-chain voucher system with anonymous messaging and token claims. Issu
 3. **Post Message**: Recipients can use their basic voucher to post an anonymous message. The message is stored as an on-chain event, and the poster's identity remains hidden.
 4. **Claim Tokens**: Recipients use a binding voucher's private key to claim ERC20 tokens. The private key signs the recipient address, ensuring only the intended recipient can claim.
 
+## Voucher Types
+
+`SimpleVoucher` intentionally stores only voucher hashes. Voucher type semantics are defined by how an application derives and redeems those hashes.
+
+- **Basic Voucher**: A bearer secret. The issued hash is `keccak256(rawVoucher)`, and redemption reveals the raw voucher. This is simple and useful for anonymous flows, but on public blockchains it is vulnerable to transaction front-running once the raw voucher appears in calldata.
+- **Binding Voucher**: A single-use signing key. The issued hash is `keccak256(voucherSigner)`, and redemption proves possession of the corresponding private key by submitting a signature. The signed digest is application-defined, so apps can bind the voucher to a recipient, action, or other payload while keeping the core primitive general.
+
 ## Contracts
 
 | Contract | Description |

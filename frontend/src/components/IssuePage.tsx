@@ -127,7 +127,7 @@ export function IssuePage() {
     writeContract({
       address: SIMPLE_VOUCHER_ADDRESS,
       abi: SIMPLE_VOUCHER_ABI,
-      functionName: "issueBasicVouchers",
+      functionName: "issueVouchers",
       args: [topic, voucherHashes],
     });
   };

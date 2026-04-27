@@ -14,33 +14,22 @@ contract SimpleVoucher is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @notice Voucher status enum
     enum Status {
         Nonexist, // 0 - Voucher does not exist
-        Issued,   // 1 - Voucher has been issued
-        Redeemed  // 2 - Voucher has been redeemed
+        Issued, // 1 - Voucher has been issued
+        Redeemed // 2 - Voucher has been redeemed
     }
 
     /// @notice Mapping: issuer => topicHash => voucherHash => Status
     mapping(address issuer => mapping(bytes32 topicHash => mapping(bytes32 voucherHash => Status))) public vouchers;
 
     /// @notice Emitted when vouchers are issued
-    event VouchersIssued(
-        address indexed issuer,
-        string topic,
-        bytes32 indexed topicHash
-    );
+    event VouchersIssued(address indexed issuer, string topic, bytes32 indexed topicHash);
 
     /// @notice Emitted when a single voucher is issued (for indexing individual vouchers)
-    event VoucherIssued(
-        address indexed issuer,
-        bytes32 indexed topicHash,
-        bytes32 indexed voucherHash
-    );
+    event VoucherIssued(address indexed issuer, bytes32 indexed topicHash, bytes32 indexed voucherHash);
 
     /// @notice Emitted when a voucher is redeemed
     event VoucherRedeemed(
-        address indexed issuer,
-        address indexed redeemer,
-        bytes32 indexed topicHash,
-        bytes32 voucherHash
+        address indexed issuer, address indexed redeemer, bytes32 indexed topicHash, bytes32 voucherHash
     );
 
     /// @notice Error when voucher already exists
@@ -69,11 +58,13 @@ contract SimpleVoucher is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Issue basic vouchers under a topic
+     * @notice Issue vouchers under a topic
+     * @dev The voucher hash format is intentionally application-defined. Basic vouchers
+     *      use keccak256(rawVoucher); binding vouchers use keccak256(voucherSigner).
      * @param topic The topic string for the vouchers
      * @param voucherHashes Array of voucher hashes to register
      */
-    function issueBasicVouchers(string calldata topic, bytes32[] calldata voucherHashes) external {
+    function issueVouchers(string calldata topic, bytes32[] calldata voucherHashes) public {
         if (voucherHashes.length == 0) {
             revert EmptyVoucherHashes();
         }
@@ -127,12 +118,9 @@ contract SimpleVoucher is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @param digest The digest that was signed
      * @param signature The signature produced by the voucher's private key
      */
-    function redeemBindingVoucher(
-        address issuer,
-        string calldata topic,
-        bytes32 digest,
-        bytes calldata signature
-    ) external {
+    function redeemBindingVoucher(address issuer, string calldata topic, bytes32 digest, bytes calldata signature)
+        external
+    {
         address signer = ECDSA.recover(digest, signature);
         bytes32 voucherHash = keccak256(abi.encodePacked(signer));
         bytes32 topicHash = keccak256(abi.encodePacked(topic));
@@ -152,11 +140,11 @@ contract SimpleVoucher is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @param voucherHash The voucher hash
      * @return The status of the voucher
      */
-    function getVoucherStatus(
-        address issuer,
-        string calldata topic,
-        bytes32 voucherHash
-    ) external view returns (Status) {
+    function getVoucherStatus(address issuer, string calldata topic, bytes32 voucherHash)
+        external
+        view
+        returns (Status)
+    {
         bytes32 topicHash = keccak256(abi.encodePacked(topic));
         return vouchers[issuer][topicHash][voucherHash];
     }

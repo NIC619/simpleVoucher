@@ -12,7 +12,7 @@ export const SIMPLE_VOUCHER_ABI = [
   },
   {
     type: "function",
-    name: "issueBasicVouchers",
+    name: "issueVouchers",
     inputs: [
       { name: "topic", type: "string" },
       { name: "voucherHashes", type: "bytes32[]" },

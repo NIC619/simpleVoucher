@@ -23,12 +23,7 @@ contract VoucherBoardTest is AATest {
     bytes32 public voucherHash1;
     bytes32 public voucherHash2;
 
-    event MessagePosted(
-        address indexed issuer,
-        string topic,
-        bytes32 indexed voucherHash,
-        string message
-    );
+    event MessagePosted(address indexed issuer, string topic, bytes32 indexed voucherHash, string message);
 
     function setUp() public override {
         super.setUp();
@@ -41,22 +36,13 @@ contract VoucherBoardTest is AATest {
         // Deploy SimpleVoucher
         SimpleVoucher simpleVoucherImpl = new SimpleVoucher();
         bytes memory simpleVoucherData = abi.encodeCall(SimpleVoucher.initialize, (owner));
-        ERC1967Proxy simpleVoucherProxy = new ERC1967Proxy(
-            address(simpleVoucherImpl),
-            simpleVoucherData
-        );
+        ERC1967Proxy simpleVoucherProxy = new ERC1967Proxy(address(simpleVoucherImpl), simpleVoucherData);
         simpleVoucher = SimpleVoucher(address(simpleVoucherProxy));
 
         // Deploy VoucherBoard
         VoucherBoard voucherBoardImpl = new VoucherBoard();
-        bytes memory voucherBoardData = abi.encodeCall(
-            VoucherBoard.initialize,
-            (owner, address(simpleVoucher))
-        );
-        ERC1967Proxy voucherBoardProxy = new ERC1967Proxy(
-            address(voucherBoardImpl),
-            voucherBoardData
-        );
+        bytes memory voucherBoardData = abi.encodeCall(VoucherBoard.initialize, (owner, address(simpleVoucher)));
+        ERC1967Proxy voucherBoardProxy = new ERC1967Proxy(address(voucherBoardImpl), voucherBoardData);
         voucherBoard = VoucherBoard(payable(address(voucherBoardProxy)));
 
         // Fund VoucherBoard for gas
@@ -68,7 +54,7 @@ contract VoucherBoardTest is AATest {
         voucherHashes[1] = voucherHash2;
 
         vm.prank(issuer);
-        simpleVoucher.issueBasicVouchers(topic, voucherHashes);
+        simpleVoucher.issueVouchers(topic, voucherHashes);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -80,8 +66,7 @@ contract VoucherBoardTest is AATest {
 
         // Build UserOp for postMessage
         PackedUserOperation memory userOp = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, message))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, message))
         );
         // No signature needed - voucher acts as authorization
         userOp.signature = bytes("");
@@ -94,55 +79,45 @@ contract VoucherBoardTest is AATest {
         _handleUserOp(userOp);
 
         // Verify voucher is now redeemed in SimpleVoucher
-        SimpleVoucher.Status status = simpleVoucher.getVoucherStatus(
-            issuer,
-            topic,
-            voucherHash1
-        );
+        SimpleVoucher.Status status = simpleVoucher.getVoucherStatus(issuer, topic, voucherHash1);
         assertEq(uint8(status), uint8(SimpleVoucher.Status.Redeemed));
     }
 
     function test_PostMessage_MultiplePosts_E2E() public {
         // First message
         PackedUserOperation memory userOp1 = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "First message"))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "First message"))
         );
         userOp1.signature = bytes("");
         _handleUserOp(userOp1);
 
         // Second message with different voucher
         PackedUserOperation memory userOp2 = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher2, "Second message"))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher2, "Second message"))
         );
         userOp2.signature = bytes("");
         _handleUserOp(userOp2);
 
         // Both vouchers should be redeemed
         assertEq(
-            uint8(simpleVoucher.getVoucherStatus(issuer, topic, voucherHash1)),
-            uint8(SimpleVoucher.Status.Redeemed)
+            uint8(simpleVoucher.getVoucherStatus(issuer, topic, voucherHash1)), uint8(SimpleVoucher.Status.Redeemed)
         );
         assertEq(
-            uint8(simpleVoucher.getVoucherStatus(issuer, topic, voucherHash2)),
-            uint8(SimpleVoucher.Status.Redeemed)
+            uint8(simpleVoucher.getVoucherStatus(issuer, topic, voucherHash2)), uint8(SimpleVoucher.Status.Redeemed)
         );
     }
 
     function test_PostMessage_RevertIfVoucherAlreadyRedeemed_E2E() public {
         // First post succeeds
         PackedUserOperation memory userOp1 = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "First"))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "First"))
         );
         userOp1.signature = bytes("");
         _handleUserOp(userOp1);
 
         // Second post with same voucher should fail validation
         PackedUserOperation memory userOp2 = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "Second"))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, voucher1, "Second"))
         );
         userOp2.signature = bytes("");
 
@@ -154,8 +129,7 @@ contract VoucherBoardTest is AATest {
         bytes32 invalidVoucher = keccak256("invalid");
 
         PackedUserOperation memory userOp = _buildUserOpWithoutSignature(
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, invalidVoucher, "Message"))
+            address(voucherBoard), abi.encodeCall(VoucherBoard.postMessage, (issuer, topic, invalidVoucher, "Message"))
         );
         userOp.signature = bytes("");
 
@@ -167,11 +141,8 @@ contract VoucherBoardTest is AATest {
         uint256 ownerBalanceBefore = owner.balance;
 
         // Build UserOp for withdraw (requires owner signature)
-        PackedUserOperation memory userOp = _buildUserOp(
-            ownerKey,
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.withdraw, (0.5 ether))
-        );
+        PackedUserOperation memory userOp =
+            _buildUserOp(ownerKey, address(voucherBoard), abi.encodeCall(VoucherBoard.withdraw, (0.5 ether)));
 
         _handleUserOp(userOp);
 
@@ -181,11 +152,8 @@ contract VoucherBoardTest is AATest {
     function test_Withdraw_RevertIfNotOwner_E2E() public {
         (, uint256 fakeKey) = makeAddrAndKey("fake");
 
-        PackedUserOperation memory userOp = _buildUserOp(
-            fakeKey,
-            address(voucherBoard),
-            abi.encodeCall(VoucherBoard.withdraw, (0.5 ether))
-        );
+        PackedUserOperation memory userOp =
+            _buildUserOp(fakeKey, address(voucherBoard), abi.encodeCall(VoucherBoard.withdraw, (0.5 ether)));
 
         vm.expectRevert(); // AA24 signature error
         _handleUserOp(userOp);

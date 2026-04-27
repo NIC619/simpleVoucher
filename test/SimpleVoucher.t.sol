@@ -16,23 +16,12 @@ contract SimpleVoucherTest is Test {
     string public constant TOPIC = "test-topic";
     bytes32 public topicHash;
 
-    event VouchersIssued(
-        address indexed issuer,
-        string topic,
-        bytes32 indexed topicHash
-    );
+    event VouchersIssued(address indexed issuer, string topic, bytes32 indexed topicHash);
 
-    event VoucherIssued(
-        address indexed issuer,
-        bytes32 indexed topicHash,
-        bytes32 indexed voucherHash
-    );
+    event VoucherIssued(address indexed issuer, bytes32 indexed topicHash, bytes32 indexed voucherHash);
 
     event VoucherRedeemed(
-        address indexed issuer,
-        address indexed redeemer,
-        bytes32 indexed topicHash,
-        bytes32 voucherHash
+        address indexed issuer, address indexed redeemer, bytes32 indexed topicHash, bytes32 voucherHash
     );
 
     function setUp() public {
@@ -56,7 +45,7 @@ contract SimpleVoucherTest is Test {
         assertEq(voucherContract.owner(), owner);
     }
 
-    function test_IssueBasicVouchers() public {
+    function test_IssueVouchers() public {
         // Raw voucher values
         bytes32 voucher1 = bytes32("voucher1");
         bytes32 voucher2 = bytes32("voucher2");
@@ -69,18 +58,17 @@ contract SimpleVoucherTest is Test {
         hashes[2] = _hashVoucher(voucher3);
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Check all vouchers are issued
         for (uint256 i = 0; i < hashes.length; i++) {
             assertEq(
-                uint256(voucherContract.vouchers(issuer, topicHash, hashes[i])),
-                uint256(SimpleVoucher.Status.Issued)
+                uint256(voucherContract.vouchers(issuer, topicHash, hashes[i])), uint256(SimpleVoucher.Status.Issued)
             );
         }
     }
 
-    function test_IssueBasicVouchers_EmitsEvents() public {
+    function test_IssueVouchers_EmitsEvents() public {
         bytes32 voucher1 = bytes32("voucher1");
         bytes32 voucher2 = bytes32("voucher2");
 
@@ -98,18 +86,18 @@ contract SimpleVoucherTest is Test {
         emit VouchersIssued(issuer, TOPIC, topicHash);
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
     }
 
-    function test_IssueBasicVouchers_RevertOnEmpty() public {
+    function test_IssueVouchers_RevertOnEmpty() public {
         bytes32[] memory hashes = new bytes32[](0);
 
         vm.prank(issuer);
         vm.expectRevert(SimpleVoucher.EmptyVoucherHashes.selector);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
     }
 
-    function test_IssueBasicVouchers_RevertOnDuplicate() public {
+    function test_IssueVouchers_RevertOnDuplicate() public {
         bytes32 voucher1 = bytes32("voucher1");
         bytes32 voucherHash = _hashVoucher(voucher1);
 
@@ -117,11 +105,11 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         vm.prank(issuer);
         vm.expectRevert(abi.encodeWithSelector(SimpleVoucher.VoucherAlreadyExists.selector, voucherHash));
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
     }
 
     function test_RedeemVoucher() public {
@@ -132,15 +120,14 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Redeem with raw voucher value
         vm.prank(redeemer);
         voucherContract.redeemVoucher(issuer, TOPIC, rawVoucher);
 
         assertEq(
-            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)),
-            uint256(SimpleVoucher.Status.Redeemed)
+            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)), uint256(SimpleVoucher.Status.Redeemed)
         );
     }
 
@@ -152,7 +139,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         vm.expectEmit(true, true, true, true);
         emit VoucherRedeemed(issuer, redeemer, topicHash, voucherHash);
@@ -178,7 +165,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         vm.prank(redeemer);
         voucherContract.redeemVoucher(issuer, TOPIC, rawVoucher);
@@ -203,10 +190,9 @@ contract SimpleVoucherTest is Test {
 
         // Issue and check issued
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
         assertEq(
-            uint256(voucherContract.getVoucherStatus(issuer, TOPIC, voucherHash)),
-            uint256(SimpleVoucher.Status.Issued)
+            uint256(voucherContract.getVoucherStatus(issuer, TOPIC, voucherHash)), uint256(SimpleVoucher.Status.Issued)
         );
 
         // Redeem and check redeemed
@@ -228,19 +214,17 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         vm.prank(issuer2);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Both should be issued under their respective issuers
         assertEq(
-            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)),
-            uint256(SimpleVoucher.Status.Issued)
+            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)), uint256(SimpleVoucher.Status.Issued)
         );
         assertEq(
-            uint256(voucherContract.vouchers(issuer2, topicHash, voucherHash)),
-            uint256(SimpleVoucher.Status.Issued)
+            uint256(voucherContract.vouchers(issuer2, topicHash, voucherHash)), uint256(SimpleVoucher.Status.Issued)
         );
     }
 
@@ -254,18 +238,16 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.startPrank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
-        voucherContract.issueBasicVouchers(topic2, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(topic2, hashes);
         vm.stopPrank();
 
         // Both should be issued under their respective topics
         assertEq(
-            uint256(voucherContract.getVoucherStatus(issuer, TOPIC, voucherHash)),
-            uint256(SimpleVoucher.Status.Issued)
+            uint256(voucherContract.getVoucherStatus(issuer, TOPIC, voucherHash)), uint256(SimpleVoucher.Status.Issued)
         );
         assertEq(
-            uint256(voucherContract.getVoucherStatus(issuer, topic2, voucherHash)),
-            uint256(SimpleVoucher.Status.Issued)
+            uint256(voucherContract.getVoucherStatus(issuer, topic2, voucherHash)), uint256(SimpleVoucher.Status.Issued)
         );
     }
 
@@ -281,7 +263,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Redeem by signing a digest with the private key
         bytes32 digest = keccak256(abi.encodePacked("some content"));
@@ -292,8 +274,7 @@ contract SimpleVoucherTest is Test {
         voucherContract.redeemBindingVoucher(issuer, TOPIC, digest, signature);
 
         assertEq(
-            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)),
-            uint256(SimpleVoucher.Status.Redeemed)
+            uint256(voucherContract.vouchers(issuer, topicHash, voucherHash)), uint256(SimpleVoucher.Status.Redeemed)
         );
     }
 
@@ -320,7 +301,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Redeem once
         bytes32 digest = keccak256(abi.encodePacked("some content"));
@@ -349,7 +330,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = correctHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(TOPIC, hashes);
+        voucherContract.issueVouchers(TOPIC, hashes);
 
         // Try to redeem with wrong key — recovered signer will produce a different hash
         bytes32 digest = keccak256(abi.encodePacked("some content"));
@@ -370,7 +351,7 @@ contract SimpleVoucherTest is Test {
         hashes[0] = voucherHash;
 
         vm.prank(issuer);
-        voucherContract.issueBasicVouchers(topic, hashes);
+        voucherContract.issueVouchers(topic, hashes);
 
         vm.prank(redeemer);
         voucherContract.redeemVoucher(issuer, topic, rawVoucher);
